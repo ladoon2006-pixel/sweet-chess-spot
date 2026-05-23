@@ -193,8 +193,9 @@ export default function ChessBoard({ mode, humanColor = "w" }: Props) {
           className="grid"
           style={{
             gridTemplateColumns: "repeat(8, minmax(0, 1fr))",
+            gridTemplateRows: "repeat(8, minmax(0, 1fr))",
             width: "min(92vw, 560px)",
-            aspectRatio: "1 / 1",
+            height: "min(92vw, 560px)",
           }}
         >
           {ranks.map((rank) =>
