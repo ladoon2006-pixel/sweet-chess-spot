@@ -140,5 +140,15 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  }
+}
+
+@layer utilities {
+  .chess-piece {
+    font-family: "Segoe UI Symbol", "DejaVu Sans", "Arial Unicode MS", sans-serif;
+    line-height: 1;
+    user-select: none;
+    -webkit-user-select: none;
   }
 }
