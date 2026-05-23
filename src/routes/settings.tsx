@@ -53,12 +53,20 @@ function SettingsPage() {
               const active = s.boardThemeIdx === i;
               return (
                 <button
+                  type="button"
                   key={t.name}
                   onClick={() => s.setBoardTheme(i)}
-                  className={`group rounded-xl border-2 p-3 text-start transition-all ${
-                    active ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-foreground/30"
+                  className={`group relative rounded-xl border-2 p-3 text-start transition-all cursor-pointer touch-manipulation ${
+                    active
+                      ? "border-primary ring-4 ring-primary/40 bg-primary/5"
+                      : "border-border active:border-primary/60"
                   }`}
                 >
+                  {active && (
+                    <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow">
+                      ✓
+                    </span>
+                  )}
                   <div className="grid grid-cols-4 grid-rows-2 rounded-md overflow-hidden mb-2 h-16">
                     {Array.from({ length: 8 }).map((_, k) => {
                       const r = Math.floor(k / 4), c = k % 4;
@@ -83,13 +91,21 @@ function SettingsPage() {
               const active = s.pieceThemeIdx === i;
               return (
                 <button
+                  type="button"
                   key={t.name}
                   onClick={() => s.setPieceTheme(i)}
-                  className={`rounded-xl border-2 p-3 transition-all ${
-                    active ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-foreground/30"
+                  className={`relative rounded-xl border-2 p-3 transition-all cursor-pointer touch-manipulation ${
+                    active
+                      ? "border-primary ring-4 ring-primary/40"
+                      : "border-border active:border-primary/60"
                   }`}
                   style={{ backgroundColor: board.light }}
                 >
+                  {active && (
+                    <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow z-10">
+                      ✓
+                    </span>
+                  )}
                   <div className="flex items-center justify-center gap-1 text-4xl chess-piece">
                     <span style={{ color: t.white, textShadow: "0 0 1px #000" }}>{PIECE_PREVIEW}</span>
                     <span style={{ color: t.black, textShadow: "0 0 1px #fff" }}>{PIECE_PREVIEW}</span>

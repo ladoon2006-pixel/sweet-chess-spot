@@ -23,9 +23,11 @@ interface Props {
   mode: Mode;
   /** Which color the human plays when mode === "ai" */
   humanColor?: "w" | "b";
+  /** Force board orientation (used by friend mode flip button) */
+  orientationOverride?: "w" | "b";
 }
 
-export default function ChessBoard({ mode, humanColor = "w" }: Props) {
+export default function ChessBoard({ mode, humanColor = "w", orientationOverride }: Props) {
   const { boardThemeIdx, pieceThemeIdx, soundEnabled, aiDifficulty } = useSettings();
   const board = BOARD_THEMES[boardThemeIdx];
   const pieces = PIECE_THEMES[pieceThemeIdx];
@@ -40,7 +42,7 @@ export default function ChessBoard({ mode, humanColor = "w" }: Props) {
   const [promotion, setPromotion] = useState<{ from: Square; to: Square } | null>(null);
   const [endDialog, setEndDialog] = useState<string | null>(null);
 
-  const orientation: "w" | "b" = mode === "ai" ? humanColor : "w";
+  const orientation: "w" | "b" = orientationOverride ?? (mode === "ai" ? humanColor : "w");
 
   const beep = (m: Move) => {
     if (!soundEnabled) return;
@@ -193,8 +195,9 @@ export default function ChessBoard({ mode, humanColor = "w" }: Props) {
           className="grid"
           style={{
             gridTemplateColumns: "repeat(8, minmax(0, 1fr))",
+            gridTemplateRows: "repeat(8, minmax(0, 1fr))",
             width: "min(92vw, 560px)",
-            aspectRatio: "1 / 1",
+            height: "min(92vw, 560px)",
           }}
         >
           {ranks.map((rank) =>

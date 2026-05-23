@@ -25,6 +25,7 @@ function PlayPage() {
   const m = mode as "ai" | "friend";
   const { aiDifficulty, setAiDifficulty } = useSettings();
   const [humanColor, setHumanColor] = useState<"w" | "b">("w");
+  const [friendOrientation, setFriendOrientation] = useState<"w" | "b">("w");
   const [key, setKey] = useState(0);
 
   return (
@@ -83,8 +84,28 @@ function PlayPage() {
         </div>
       )}
 
+      {m === "friend" && (
+        <div className="max-w-5xl mx-auto mb-4 flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
+          <span className="text-sm font-medium">جهت صفحه:</span>
+          <span className="text-sm text-muted-foreground">
+            {friendOrientation === "w" ? "سفید پایین" : "سیاه پایین"}
+          </span>
+          <button
+            onClick={() => setFriendOrientation((o) => (o === "w" ? "b" : "w"))}
+            className="ms-auto px-3 py-1.5 rounded-full text-sm border bg-background hover:bg-accent active:bg-accent transition-colors"
+          >
+            🔄 تعویض جای سفید و سیاه
+          </button>
+        </div>
+      )}
+
       <main className="max-w-5xl mx-auto flex justify-center">
-        <ChessBoard key={key} mode={m} humanColor={humanColor} />
+        <ChessBoard
+          key={key}
+          mode={m}
+          humanColor={humanColor}
+          orientationOverride={m === "friend" ? friendOrientation : undefined}
+        />
       </main>
     </div>
   );
