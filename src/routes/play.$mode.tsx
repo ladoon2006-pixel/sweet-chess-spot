@@ -25,6 +25,7 @@ function PlayPage() {
   const m = mode as "ai" | "friend";
   const { aiDifficulty, setAiDifficulty } = useSettings();
   const [humanColor, setHumanColor] = useState<"w" | "b">("w");
+  const [friendOrientation, setFriendOrientation] = useState<"w" | "b">("w");
   const [key, setKey] = useState(0);
 
   return (
