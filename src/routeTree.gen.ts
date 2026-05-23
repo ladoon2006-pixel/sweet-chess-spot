@@ -10,12 +10,38 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlayOnlineRouteImport } from './routes/play.online'
 import { Route as PlayModeRouteImport } from './routes/play.$mode'
+import { Route as PlayGameGameIdRouteImport } from './routes/play.game.$gameId'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -23,40 +49,102 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayOnlineRoute = PlayOnlineRouteImport.update({
+  id: '/play/online',
+  path: '/play/online',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlayModeRoute = PlayModeRouteImport.update({
   id: '/play/$mode',
   path: '/play/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayGameGameIdRoute = PlayGameGameIdRouteImport.update({
+  id: '/play/game/$gameId',
+  path: '/play/game/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
+  '/play/game/$gameId': typeof PlayGameGameIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
+  '/play/game/$gameId': typeof PlayGameGameIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
+  '/play/game/$gameId': typeof PlayGameGameIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/play/$mode'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
+    | '/play/game/$gameId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/play/$mode'
-  id: '__root__' | '/' | '/settings' | '/play/$mode'
+  to:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
+    | '/play/game/$gameId'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
+    | '/play/game/$gameId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  ChatRoute: typeof ChatRoute
+  FriendsRoute: typeof FriendsRoute
+  ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
   PlayModeRoute: typeof PlayModeRoute
+  PlayOnlineRoute: typeof PlayOnlineRoute
+  PlayGameGameIdRoute: typeof PlayGameGameIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,11 +156,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/online': {
+      id: '/play/online'
+      path: '/play/online'
+      fullPath: '/play/online'
+      preLoaderRoute: typeof PlayOnlineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/play/$mode': {
@@ -82,13 +205,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayModeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/play/game/$gameId': {
+      id: '/play/game/$gameId'
+      path: '/play/game/$gameId'
+      fullPath: '/play/game/$gameId'
+      preLoaderRoute: typeof PlayGameGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  ChatRoute: ChatRoute,
+  FriendsRoute: FriendsRoute,
+  ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
   PlayModeRoute: PlayModeRoute,
+  PlayOnlineRoute: PlayOnlineRoute,
+  PlayGameGameIdRoute: PlayGameGameIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

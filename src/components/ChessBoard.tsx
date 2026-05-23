@@ -63,7 +63,7 @@ export default function ChessBoard({ mode, humanColor = "w", orientationOverride
     const g = gameRef.current;
     if (g.isGameOver()) {
       setTimeout(() => {
-        if (soundEnabled) playSound("end");
+        if (soundEnabled) playSound(g.isCheckmate() ? "victory" : "draw");
         if (g.isCheckmate()) {
           const winner = g.turn() === "w" ? "سیاه" : "سفید";
           setEndDialog(`کیش و مات! ${winner} برنده شد.`);
