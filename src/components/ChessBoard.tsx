@@ -23,9 +23,11 @@ interface Props {
   mode: Mode;
   /** Which color the human plays when mode === "ai" */
   humanColor?: "w" | "b";
+  /** Force board orientation (used by friend mode flip button) */
+  orientationOverride?: "w" | "b";
 }
 
-export default function ChessBoard({ mode, humanColor = "w" }: Props) {
+export default function ChessBoard({ mode, humanColor = "w", orientationOverride }: Props) {
   const { boardThemeIdx, pieceThemeIdx, soundEnabled, aiDifficulty } = useSettings();
   const board = BOARD_THEMES[boardThemeIdx];
   const pieces = PIECE_THEMES[pieceThemeIdx];
