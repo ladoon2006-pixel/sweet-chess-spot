@@ -42,7 +42,7 @@ export default function ChessBoard({ mode, humanColor = "w", orientationOverride
   const [promotion, setPromotion] = useState<{ from: Square; to: Square } | null>(null);
   const [endDialog, setEndDialog] = useState<string | null>(null);
 
-  const orientation: "w" | "b" = mode === "ai" ? humanColor : "w";
+  const orientation: "w" | "b" = orientationOverride ?? (mode === "ai" ? humanColor : "w");
 
   const beep = (m: Move) => {
     if (!soundEnabled) return;
