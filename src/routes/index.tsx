@@ -1,67 +1,72 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
+import BottomNav from "@/components/BottomNav";
+import bgUrl from "@/assets/chess-bg.jpg";
+import { Crown, Globe, Users, Bot } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "شطرنج آنلاین — بازی با هوش مصنوعی یا دوستت" },
-      { name: "description", content: "بازی شطرنج با هوش مصنوعی یا دوستت روی یک دستگاه، با صدای واقعی مهره‌ها و تم‌های قابل تنظیم." },
+      { title: "Chess Master — شطرنج آنلاین" },
+      { name: "description", content: "بازی شطرنج آنلاین، با دوست یا هوش مصنوعی، با چت زنده و سیستم دوستی." },
     ],
   }),
 });
 
 function Home() {
+  const { user, loading } = useAuth();
+  const nav = useNavigate();
+
+  const handleOnline = () => {
+    if (!user) nav({ to: "/auth", search: { next: "/play/online" } });
+    else nav({ to: "/play/online" });
+  };
+
   return (
-    <div dir="rtl" className="min-h-screen w-full bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-10">
-          <div className="text-7xl mb-3">♛</div>
-          <h1 className="text-4xl font-extrabold tracking-tight">شطرنج</h1>
-          <p className="mt-2 text-muted-foreground">یک حالت بازی رو انتخاب کن</p>
-        </div>
+    <div
+      dir="rtl"
+      className="relative min-h-screen w-full flex flex-col items-center"
+      style={{ ["--wood-bg-image" as any]: `url(${bgUrl})` }}
+    >
+      <div className="wood-bg absolute inset-0 -z-10" />
+      <div className="absolute inset-0 -z-10 bg-black/35" />
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <ModeCard
-            to="/play/ai"
-            title="بازی با هوش مصنوعی"
-            desc="چالش با کامپیوتر در سه سطح سختی"
-            icon="🤖"
-          />
-          <ModeCard
-            to="/play/friend"
-            title="بازی با دوست"
-            desc="دو نفره روی همین دستگاه — بدون نیاز به مهره واقعی"
-            icon="👥"
-          />
-        </div>
+      {/* Logo / title */}
+      <div className="pt-12 sm:pt-16 flex flex-col items-center">
+        <Crown className="text-amber-200 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" size={56} />
+        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-wide wood-text" style={{ fontFamily: "serif" }}>
+          CHESS MASTER
+        </h1>
+        <div className="text-amber-100/80 tracking-[0.4em] text-xs sm:text-sm mt-1">ONLINE</div>
+      </div>
 
-        <div className="mt-6 flex justify-center">
-          <Link
-            to="/settings"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border bg-card hover:bg-accent transition-colors text-sm font-medium"
-          >
-            ⚙️ تنظیمات
+      {/* Buttons */}
+      <div className="mt-12 w-full max-w-sm px-6 flex flex-col gap-4">
+        <MenuButton onClick={handleOnline} icon={<Globe size={22} />} label="بازی آنلاین" />
+        <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
+        <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
+      </div>
+
+      {!loading && !user && (
+        <div className="mt-8 text-center">
+          <Link to="/auth" className="text-amber-100/90 underline text-sm">
+            وارد شوید تا آنلاین بازی کنید
           </Link>
         </div>
-      </div>
+      )}
+
+      <div className="h-28" />
+      <BottomNav />
     </div>
   );
 }
 
-function ModeCard({
-  to, title, desc, icon,
-}: { to: string; title: string; desc: string; icon: string }) {
-  return (
-    <Link
-      to={to}
-      className="group rounded-2xl border bg-card p-6 hover:shadow-xl hover:-translate-y-0.5 transition-all"
-    >
-      <div className="text-4xl mb-3">{icon}</div>
-      <h2 className="text-xl font-bold">{title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
-      <div className="mt-4 text-sm font-semibold text-primary group-hover:underline">
-        شروع بازی ←
-      </div>
-    </Link>
-  );
+function MenuButton({
+  to, onClick, icon, label,
+}: { to?: string; onClick?: () => void; icon: React.ReactNode; label: string }) {
+  const cls =
+    "wood-panel rounded-xl py-4 px-5 flex items-center justify-center gap-3 wood-text text-lg font-bold active:translate-y-0.5 transition-transform";
+  if (to) return <Link to={to} className={cls}>{icon}<span>{label}</span></Link>;
+  return <button onClick={onClick} className={cls}>{icon}<span>{label}</span></button>;
 }

@@ -10,7 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlayOnlineRouteImport } from './routes/play.online'
 import { Route as PlayModeRouteImport } from './routes/play.$mode'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -18,9 +23,34 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayOnlineRoute = PlayOnlineRouteImport.update({
+  id: '/play/online',
+  path: '/play/online',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlayModeRoute = PlayModeRouteImport.update({
@@ -31,32 +61,77 @@ const PlayModeRoute = PlayModeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat': typeof ChatRoute
+  '/friends': typeof FriendsRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/play/$mode': typeof PlayModeRoute
+  '/play/online': typeof PlayOnlineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/play/$mode'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/play/$mode'
-  id: '__root__' | '/' | '/settings' | '/play/$mode'
+  to:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/friends'
+    | '/profile'
+    | '/settings'
+    | '/play/$mode'
+    | '/play/online'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  ChatRoute: typeof ChatRoute
+  FriendsRoute: typeof FriendsRoute
+  ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
   PlayModeRoute: typeof PlayModeRoute
+  PlayOnlineRoute: typeof PlayOnlineRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,11 +143,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/online': {
+      id: '/play/online'
+      path: '/play/online'
+      fullPath: '/play/online'
+      preLoaderRoute: typeof PlayOnlineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/play/$mode': {
@@ -87,9 +197,24 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  ChatRoute: ChatRoute,
+  FriendsRoute: FriendsRoute,
+  ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
   PlayModeRoute: PlayModeRoute,
+  PlayOnlineRoute: PlayOnlineRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
