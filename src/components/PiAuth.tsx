@@ -23,6 +23,7 @@ interface PiSession {
 }
 
 const STORAGE_KEY = "pi_session";
+const SESSION_EVENT = "pi-session-changed";
 
 function loadSession(): PiSession | null {
   if (typeof window === "undefined") return null;
@@ -32,6 +33,20 @@ function loadSession(): PiSession | null {
   } catch {
     return null;
   }
+}
+
+export function usePiSession(): PiSession | null {
+  const [s, setS] = useState<PiSession | null>(() => loadSession());
+  useEffect(() => {
+    const update = () => setS(loadSession());
+    window.addEventListener(SESSION_EVENT, update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener(SESSION_EVENT, update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+  return s;
 }
 
 function waitForPi(timeoutMs = 8000): Promise<NonNullable<Window["Pi"]>> {
