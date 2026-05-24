@@ -23,6 +23,7 @@ interface PiSession {
 }
 
 const STORAGE_KEY = "pi_session";
+const SESSION_EVENT = "pi-session-changed";
 
 function loadSession(): PiSession | null {
   if (typeof window === "undefined") return null;
@@ -32,6 +33,20 @@ function loadSession(): PiSession | null {
   } catch {
     return null;
   }
+}
+
+export function usePiSession(): PiSession | null {
+  const [s, setS] = useState<PiSession | null>(() => loadSession());
+  useEffect(() => {
+    const update = () => setS(loadSession());
+    window.addEventListener(SESSION_EVENT, update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener(SESSION_EVENT, update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+  return s;
 }
 
 function waitForPi(timeoutMs = 8000): Promise<NonNullable<Window["Pi"]>> {
@@ -50,7 +65,12 @@ let initPromise: Promise<void> | null = null;
 async function ensurePiInit() {
   const Pi = await waitForPi();
   if (!initPromise) {
-    initPromise = Promise.resolve(Pi.init({ version: "2.0", sandbox: true }));
+    // In Pi Browser production, sandbox must be false.
+    // Only use sandbox=true when testing from the Pi sandbox URL.
+    const isSandbox =
+      typeof window !== "undefined" &&
+      /sandbox\.minepi\.com/i.test(window.location.hostname);
+    initPromise = Promise.resolve(Pi.init({ version: "2.0", sandbox: isSandbox }));
   }
   await initPromise;
 }
@@ -75,6 +95,7 @@ export default function PiAuth() {
         accessToken: auth.accessToken,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event(SESSION_EVENT));
       setSession(next);
       toast.success(`خوش آمدید ${result.user.username}`);
     } catch (e: any) {
