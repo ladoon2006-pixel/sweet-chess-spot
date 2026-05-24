@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import BottomNav from "@/components/BottomNav";
+import PiAuth from "@/components/PiAuth";
 import bgUrl from "@/assets/chess-bg.jpg";
 import { Crown, Globe, Users, Bot } from "lucide-react";
 
@@ -55,6 +56,10 @@ function Home() {
           </Link>
         </div>
       )}
+
+      <div className="mt-4 flex flex-col items-center">
+        <PiAuth />
+      </div>
 
       <div className="h-28" />
       <BottomNav />

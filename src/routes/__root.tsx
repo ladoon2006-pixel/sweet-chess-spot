@@ -93,6 +93,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
     ],
+    scripts: [
+      { src: "https://sdk.minepi.com/pi-sdk.js" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
