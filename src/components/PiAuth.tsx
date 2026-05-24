@@ -50,7 +50,12 @@ let initPromise: Promise<void> | null = null;
 async function ensurePiInit() {
   const Pi = await waitForPi();
   if (!initPromise) {
-    initPromise = Promise.resolve(Pi.init({ version: "2.0", sandbox: true }));
+    // In Pi Browser production, sandbox must be false.
+    // Only use sandbox=true when testing from the Pi sandbox URL.
+    const isSandbox =
+      typeof window !== "undefined" &&
+      /sandbox\.minepi\.com/i.test(window.location.hostname);
+    initPromise = Promise.resolve(Pi.init({ version: "2.0", sandbox: isSandbox }));
   }
   await initPromise;
 }
