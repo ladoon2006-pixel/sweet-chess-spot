@@ -57,6 +57,10 @@ function Home() {
         </div>
       )}
 
+      <div className="mt-4 flex flex-col items-center">
+        <PiAuth />
+      </div>
+
       <div className="h-28" />
       <BottomNav />
     </div>
