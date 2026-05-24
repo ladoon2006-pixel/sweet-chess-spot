@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
 import PiAuth, { usePiSession } from "@/components/PiAuth";
 import bgUrl from "@/assets/chess-bg.jpg";
@@ -16,12 +16,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { user, loading } = useAuth();
+  const session = usePiSession();
   const nav = useNavigate();
 
   const handleOnline = () => {
-    if (!user) nav({ to: "/auth", search: { next: "/play/online" } });
-    else nav({ to: "/play/online" });
+    if (!session) {
+      toast.error("ابتدا با Pi Network وارد شوید");
+      return;
+    }
+    nav({ to: "/play/online" });
   };
 
   return (
@@ -33,7 +36,6 @@ function Home() {
       <div className="wood-bg absolute inset-0 -z-10" />
       <div className="absolute inset-0 -z-10 bg-black/35" />
 
-      {/* Logo / title */}
       <div className="pt-12 sm:pt-16 flex flex-col items-center">
         <Crown className="text-amber-200 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" size={56} />
         <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-wide wood-text" style={{ fontFamily: "serif" }}>
@@ -42,22 +44,13 @@ function Home() {
         <div className="text-amber-100/80 tracking-[0.4em] text-xs sm:text-sm mt-1">ONLINE</div>
       </div>
 
-      {/* Buttons */}
       <div className="mt-12 w-full max-w-sm px-6 flex flex-col gap-4">
         <MenuButton onClick={handleOnline} icon={<Globe size={22} />} label="بازی آنلاین" />
         <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
         <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
       </div>
 
-      {!loading && !user && (
-        <div className="mt-8 text-center">
-          <Link to="/auth" className="text-amber-100/90 underline text-sm">
-            وارد شوید تا آنلاین بازی کنید
-          </Link>
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-col items-center">
+      <div className="mt-6 flex flex-col items-center">
         <PiAuth />
       </div>
 
