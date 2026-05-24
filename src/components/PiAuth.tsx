@@ -95,6 +95,7 @@ export default function PiAuth() {
         accessToken: auth.accessToken,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event(SESSION_EVENT));
       setSession(next);
       toast.success(`خوش آمدید ${result.user.username}`);
     } catch (e: any) {
