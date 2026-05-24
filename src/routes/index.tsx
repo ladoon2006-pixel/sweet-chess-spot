@@ -1,9 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/hooks/useAuth";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
-import PiAuth from "@/components/PiAuth";
+import PiAuth, { usePiSession } from "@/components/PiAuth";
 import bgUrl from "@/assets/chess-bg.jpg";
 import { Crown, Globe, Users, Bot } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Home,
