@@ -152,10 +152,12 @@
     -webkit-user-select: none;
   }
   .wood-bg {
-    background-image: var(--wood-bg-image);
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background-image:
+      linear-gradient(180deg, rgba(252, 244, 230, 0.78) 0%, rgba(245, 232, 210, 0.85) 100%),
+      var(--wood-bg-image);
+    background-size: cover, cover;
+    background-position: center, center;
+    background-attachment: fixed, fixed;
   }
   .wood-panel {
     background: linear-gradient(180deg, #6b3a1c 0%, #4a2511 100%);
