@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
 import PiAuth, { usePiSession } from "@/components/PiAuth";
-import bgUrl from "@/assets/chess-bg.jpg";
+
 import { Crown, Globe, Users, Bot } from "lucide-react";
 import { toast } from "sonner";
 
