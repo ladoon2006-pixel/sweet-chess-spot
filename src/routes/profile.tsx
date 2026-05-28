@@ -28,7 +28,7 @@ function ProfilePage() {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth", search: { next: "/profile" } });
+    if (!loading && !user) nav({ to: "/" });
   }, [user, loading, nav]);
 
   useEffect(() => {

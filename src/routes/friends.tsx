@@ -41,7 +41,7 @@ function FriendsPage() {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth", search: { next: "/friends" } });
+    if (!loading && !user) nav({ to: "/" });
   }, [user, loading, nav]);
 
   const reload = async () => {
