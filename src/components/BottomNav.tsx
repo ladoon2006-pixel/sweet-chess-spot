@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, MessageCircle, Settings, User, Users } from "lucide-react";
+import { Home, Settings, User, Users } from "lucide-react";
 
 export default function BottomNav() {
   const { pathname } = useLocation();
