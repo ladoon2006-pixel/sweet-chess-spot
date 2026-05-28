@@ -5,8 +5,7 @@ export default function BottomNav() {
   const { pathname } = useLocation();
   const items = [
     { to: "/", icon: Home, label: "خانه" },
-    { to: "/friends", icon: Users, label: "دوستان" },
-    { to: "/chat", icon: MessageCircle, label: "چت" },
+    { to: "/friends", icon: Users, label: "دوستان و چت" },
     { to: "/settings", icon: Settings, label: "تنظیمات" },
     { to: "/profile", icon: User, label: "پروفایل" },
   ] as const;
