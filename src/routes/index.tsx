@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
-import PiAuth, { usePiSession } from "@/components/PiAuth";
+import PiAuth from "@/components/PiAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Crown, Globe, Users, Bot } from "lucide-react";
 import { toast } from "sonner";
@@ -16,11 +17,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const session = usePiSession();
+  const { user } = useAuth();
   const nav = useNavigate();
 
   const handleOnline = () => {
-    if (!session) {
+    if (!user) {
       toast.error("ابتدا با Pi Network وارد شوید");
       return;
     }

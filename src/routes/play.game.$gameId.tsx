@@ -64,7 +64,7 @@ function OnlineGame() {
   const chatEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth", search: { next: `/play/game/${gameId}` } });
+    if (!loading && !user) nav({ to: "/" });
   }, [user, loading, nav, gameId]);
 
   const myColor: "w" | "b" | null = useMemo(() => {

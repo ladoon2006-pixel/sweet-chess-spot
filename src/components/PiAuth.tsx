@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { verifyPiToken } from "@/lib/pi.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -14,39 +16,6 @@ declare global {
       ) => Promise<{ accessToken: string; user: { uid: string; username: string } }>;
     };
   }
-}
-
-interface PiSession {
-  uid: string;
-  username: string;
-  accessToken: string;
-}
-
-const STORAGE_KEY = "pi_session";
-const SESSION_EVENT = "pi-session-changed";
-
-function loadSession(): PiSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as PiSession) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function usePiSession(): PiSession | null {
-  const [s, setS] = useState<PiSession | null>(() => loadSession());
-  useEffect(() => {
-    const update = () => setS(loadSession());
-    window.addEventListener(SESSION_EVENT, update);
-    window.addEventListener("storage", update);
-    return () => {
-      window.removeEventListener(SESSION_EVENT, update);
-      window.removeEventListener("storage", update);
-    };
-  }, []);
-  return s;
 }
 
 function waitForPi(timeoutMs = 8000): Promise<NonNullable<Window["Pi"]>> {
@@ -65,8 +34,6 @@ let initPromise: Promise<void> | null = null;
 async function ensurePiInit() {
   const Pi = await waitForPi();
   if (!initPromise) {
-    // In Pi Browser production, sandbox must be false.
-    // Only use sandbox=true when testing from the Pi sandbox URL.
     const isSandbox =
       typeof window !== "undefined" &&
       /sandbox\.minepi\.com/i.test(window.location.hostname);
@@ -75,10 +42,19 @@ async function ensurePiInit() {
   await initPromise;
 }
 
+// Legacy export — kept so older imports compile. Use useAuth() instead.
+export function usePiSession() {
+  const { user } = useAuth();
+  return user
+    ? { uid: user.user_metadata?.pi_uid ?? user.id, username: user.user_metadata?.username ?? "" }
+    : null;
+}
+
 export default function PiAuth() {
   const verify = useServerFn(verifyPiToken);
-  const [session, setSession] = useState<PiSession | null>(() => loadSession());
+  const { user, loading, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [autoTried, setAutoTried] = useState(false);
 
   const signIn = useCallback(async () => {
     if (busy) return;
@@ -89,14 +65,12 @@ export default function PiAuth() {
       const auth = await Pi.authenticate(["username"], () => {});
       const result = await verify({ data: { accessToken: auth.accessToken } });
       if (!result.ok) throw new Error(result.error);
-      const next: PiSession = {
-        uid: result.user.uid,
-        username: result.user.username,
-        accessToken: auth.accessToken,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      window.dispatchEvent(new Event(SESSION_EVENT));
-      setSession(next);
+      // Establish Supabase session from magic-link token hash
+      const { error: otpErr } = await supabase.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: result.tokenHash,
+      });
+      if (otpErr) throw otpErr;
       toast.success(`خوش آمدید ${result.user.username}`);
     } catch (e: any) {
       console.error("Pi auth failed", e);
@@ -106,18 +80,19 @@ export default function PiAuth() {
     }
   }, [busy, verify]);
 
-  // Auto-trigger on load if no session yet
+  // Auto-trigger once on load if no session
   useEffect(() => {
-    if (session) return;
-    if (typeof window === "undefined") return;
+    if (loading || user || autoTried) return;
+    setAutoTried(true);
     void signIn();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading, user, autoTried]);
 
-  if (session) {
+  if (user) {
     return (
-      <div className="text-xs text-amber-100/80 mt-2">
-        وارد شده با Pi: <span className="font-bold">{session.username}</span>
+      <div className="text-xs text-amber-100/80 mt-2 flex items-center gap-2">
+        <span>وارد شده: <b>{user.user_metadata?.username ?? "Pi user"}</b></span>
+        <button onClick={() => signOut()} className="underline">خروج</button>
       </div>
     );
   }

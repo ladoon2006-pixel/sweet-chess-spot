@@ -18,7 +18,7 @@ function OnlineMatch() {
   const subRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth", search: { next: "/play/online" } });
+    if (!loading && !user) nav({ to: "/" });
   }, [user, loading, nav]);
 
   const start = async () => {
