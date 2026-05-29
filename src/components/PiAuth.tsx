@@ -82,11 +82,17 @@ export default function PiAuth() {
     }
   }, [busy, verify]);
 
-  // Auto-trigger once on load if no session
+  // Auto-trigger after window load (per Pi SDK guidance)
   useEffect(() => {
     if (loading || user || autoTried) return;
     setAutoTried(true);
-    void signIn();
+    const run = () => { void signIn(); };
+    if (typeof document !== "undefined" && document.readyState === "complete") {
+      run();
+    } else if (typeof window !== "undefined") {
+      window.addEventListener("load", run, { once: true });
+      return () => window.removeEventListener("load", run);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, autoTried]);
 
