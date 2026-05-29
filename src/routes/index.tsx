@@ -53,8 +53,31 @@ function Home() {
         <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
       </div>
 
-      <div className="mt-6 flex flex-col items-center">
+      <div className="mt-6 flex flex-col items-center gap-3">
         <PiAuth />
+        <button
+          onClick={async () => {
+            try {
+              const Pi = (window as any).Pi;
+              if (!Pi) { toast.error("Pi SDK بارگذاری نشد"); return; }
+              await Pi.init({ version: "2.0", sandbox: true });
+              await Pi.createPayment(
+                { amount: 0.01, memo: "Test payment", metadata: { test: true } },
+                {
+                  onReadyForServerApproval: (paymentId: string) => console.log("approval", paymentId),
+                  onReadyForServerCompletion: (paymentId: string, txid: string) => console.log("completion", paymentId, txid),
+                  onCancel: (paymentId: string) => console.log("cancel", paymentId),
+                  onError: (error: Error) => { console.error(error); toast.error(error.message); },
+                },
+              );
+            } catch (e: any) {
+              toast.error(e?.message || "خطا در پرداخت");
+            }
+          }}
+          className="wood-panel rounded-xl py-3 px-5 wood-text font-bold"
+        >
+          پرداخت تست‌نت 0.01 Pi
+        </button>
       </div>
 
       <div className="h-28" />
