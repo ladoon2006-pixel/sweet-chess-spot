@@ -62,7 +62,9 @@ export default function PiAuth() {
     try {
       await ensurePiInit();
       const Pi = window.Pi!;
-      const auth = await Pi.authenticate(["username"], () => {});
+      const auth = await Pi.authenticate(["username", "payments"], (p) => {
+        console.log("Incomplete payment:", p);
+      });
       const result = await verify({ data: { accessToken: auth.accessToken } });
       if (!result.ok) throw new Error(result.error);
       // Establish Supabase session from magic-link token hash
