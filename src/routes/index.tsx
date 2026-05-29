@@ -74,6 +74,7 @@ function Home() {
               toast.error(e?.message || "خطا در پرداخت");
             }
           }}
+          id="pay"
           className="wood-panel rounded-xl py-3 px-5 wood-text font-bold"
         >
           پرداخت تست‌نت 0.01 Pi
