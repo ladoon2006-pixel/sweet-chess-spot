@@ -230,6 +230,39 @@ export type Database = {
           },
         ]
       }
+      pi_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          games_credited: number
+          id: string
+          payment_id: string
+          status: string
+          txid: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          games_credited: number
+          id?: string
+          payment_id: string
+          status?: string
+          txid?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          games_credited?: number
+          id?: string
+          payment_id?: string
+          status?: string
+          txid?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -237,6 +270,8 @@ export type Database = {
           draws: number
           id: string
           losses: number
+          online_games_played: number
+          paid_games_remaining: number
           rating: number
           username: string
           wins: number
@@ -247,6 +282,8 @@ export type Database = {
           draws?: number
           id: string
           losses?: number
+          online_games_played?: number
+          paid_games_remaining?: number
           rating?: number
           username: string
           wins?: number
@@ -257,6 +294,8 @@ export type Database = {
           draws?: number
           id?: string
           losses?: number
+          online_games_played?: number
+          paid_games_remaining?: number
           rating?: number
           username?: string
           wins?: number
@@ -268,6 +307,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_online_game: { Args: { p_user: string }; Returns: Json }
       find_or_join_match: { Args: { p_user: string }; Returns: string }
     }
     Enums: {
