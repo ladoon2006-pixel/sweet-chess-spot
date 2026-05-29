@@ -104,6 +104,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const piFooter = `
+    (function(){
+      function init(){
+        if(!window.Pi) return;
+        try { window.Pi.init({ version: "2.0", sandbox: true }); } catch(e) { console.error("Pi.init failed", e); }
+      }
+      async function startPiAuth(){
+        if(!window.Pi) return;
+        try {
+          await window.Pi.authenticate(['username','payments'],
+            function(paymentId){ console.log("Incomplete:", paymentId); }
+          );
+          console.log("Authenticated");
+        } catch(e){ console.error("Pi auth failed", e); }
+      }
+      function bindPay(){
+        var btn = document.getElementById("pay");
+        if(!btn || btn.dataset.piBound) return;
+        btn.dataset.piBound = "1";
+        btn.onclick = async function(){
+          if(!window.Pi){ alert("Pi SDK not loaded"); return; }
+          try {
+            await window.Pi.createPayment(
+              { amount: 0.01, memo: "Testnet payment", metadata: { test: true } },
+              {
+                onReadyForServerApproval: function(id){ console.log("approval", id); },
+                onReadyForServerCompletion: function(id, txid){ console.log("completion", id, txid); },
+                onCancel: function(id){ console.log("cancel", id); },
+                onError: function(err){ console.error(err); }
+              }
+            );
+          } catch(e){ alert("خطا در پرداخت: " + e); }
+        };
+      }
+      window.addEventListener("load", function(){
+        init();
+        startPiAuth();
+        bindPay();
+        var mo = new MutationObserver(bindPay);
+        mo.observe(document.body, { childList: true, subtree: true });
+      });
+    })();
+  `;
   return (
     <html lang="en">
       <head>
@@ -112,6 +155,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <Scripts />
+        <script dangerouslySetInnerHTML={{ __html: piFooter }} />
       </body>
     </html>
   );
