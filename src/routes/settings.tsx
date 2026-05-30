@@ -149,6 +149,12 @@ function SettingsPage() {
             </div>
           </div>
         </section>
+        {/* Privacy Policy Link */}
+        <section className="rounded-2xl border bg-card p-5 text-center">
+          <Link to="/privacy-policy" className="text-sm text-primary hover:underline">
+            Privacy Policy — سیاست حفظ حریم خصوصی
+          </Link>
+        </section>
       </main>
     </div>
   );
