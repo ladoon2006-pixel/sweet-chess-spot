@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -20,6 +21,11 @@ import { Route as PlayOnlineRouteImport } from './routes/play.online'
 import { Route as PlayModeRouteImport } from './routes/play.$mode'
 import { Route as PlayGameGameIdRouteImport } from './routes/play.game.$gameId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
   '/play/game/$gameId': typeof PlayGameGameIdRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
   '/play/game/$gameId': typeof PlayGameGameIdRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
   '/play/game/$gameId': typeof PlayGameGameIdRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/terms'
     | '/play/$mode'
     | '/play/online'
     | '/play/game/$gameId'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/terms'
     | '/play/$mode'
     | '/play/online'
     | '/play/game/$gameId'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/terms'
     | '/play/$mode'
     | '/play/online'
     | '/play/game/$gameId'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   PlayModeRoute: typeof PlayModeRoute
   PlayOnlineRoute: typeof PlayOnlineRoute
   PlayGameGameIdRoute: typeof PlayGameGameIdRoute
@@ -162,6 +175,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   PlayModeRoute: PlayModeRoute,
   PlayOnlineRoute: PlayOnlineRoute,
   PlayGameGameIdRoute: PlayGameGameIdRoute,
