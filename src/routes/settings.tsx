@@ -150,9 +150,12 @@ function SettingsPage() {
           </div>
         </section>
         {/* Privacy Policy Link */}
-        <section className="rounded-2xl border bg-card p-5 text-center">
-          <Link to="/privacy-policy" className="text-sm text-primary hover:underline">
+        <section className="rounded-2xl border bg-card p-5 text-center space-y-2">
+          <Link to="/privacy-policy" className="text-sm text-primary hover:underline block">
             Privacy Policy — سیاست حفظ حریم خصوصی
+          </Link>
+          <Link to="/terms" className="text-sm text-primary hover:underline block">
+            Terms of Service — شرایط استفاده از خدمات
           </Link>
         </section>
       </main>
