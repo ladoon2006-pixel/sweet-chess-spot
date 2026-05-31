@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight } from "lucide-react";
+import { containsProfanity } from "@/lib/profanityFilter";
+import ReportButton from "@/components/ReportButton";
 
 const search = z.object({ with: z.string().optional(), tab: z.string().optional() });
 
@@ -104,6 +106,10 @@ function FriendsPage() {
   const sendMsg = async () => {
     if (!user || !activeChat || !text.trim()) return;
     const body = text.trim();
+    if (containsProfanity(body)) {
+      toast.error("پیام شامل کلمات نامناسبه و ارسال نشد");
+      return;
+    }
     setText("");
     await supabase.from("friend_messages").insert({ sender_id: user.id, receiver_id: activeChat, content: body });
   };
@@ -203,7 +209,8 @@ function FriendsPage() {
               {accepted.map((f) => (
                 <div key={f.id} className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2">
                   <div className="text-sm"><b>{f.other?.username}</b> <span className="text-amber-200/70 text-xs">({f.other?.rating})</span></div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
+                    {f.other && <ReportButton reportedUserId={f.other.id} type="profile" />}
                     <Button size="sm" onClick={() => f.other && openChat(f.other.id)}>
                       <MessageCircle size={14} />
                     </Button>
@@ -239,7 +246,8 @@ function FriendsPage() {
                   {msgs.map((m) => {
                     const mine = m.sender_id === user?.id;
                     return (
-                      <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
+                      <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
+                        {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
                         <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
                           {m.content}
                         </div>

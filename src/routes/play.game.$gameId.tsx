@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Flag, Send, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { containsProfanity } from "@/lib/profanityFilter";
+import ReportButton from "@/components/ReportButton";
 
 export const Route = createFileRoute("/play/game/$gameId")({
   component: OnlineGame,
@@ -247,6 +249,10 @@ function OnlineGame() {
   const sendChat = async () => {
     if (!chatText.trim() || !user) return;
     const c = chatText.trim();
+    if (containsProfanity(c)) {
+      toast.error("پیام شامل کلمات نامناسبه و ارسال نشد");
+      return;
+    }
     setChatText("");
     await supabase.from("game_chat_messages").insert({ game_id: gameId, sender_id: user.id, content: c });
   };
@@ -346,7 +352,8 @@ function OnlineGame() {
             {chat.map((m) => {
               const mine = m.sender_id === user?.id;
               return (
-                <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
+                <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
+                  {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
                   <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
                     {m.content}
                   </div>
