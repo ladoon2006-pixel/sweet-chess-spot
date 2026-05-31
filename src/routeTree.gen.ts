@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -24,6 +25,11 @@ import { Route as PlayGameGameIdRouteImport } from './routes/play.game.$gameId'
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
   '/play/$mode': typeof PlayModeRoute
   '/play/online': typeof PlayOnlineRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/shop'
     | '/terms'
     | '/play/$mode'
     | '/play/online'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/shop'
     | '/terms'
     | '/play/$mode'
     | '/play/online'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/profile'
     | '/settings'
+    | '/shop'
     | '/terms'
     | '/play/$mode'
     | '/play/online'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  ShopRoute: typeof ShopRoute
   TermsRoute: typeof TermsRoute
   PlayModeRoute: typeof PlayModeRoute
   PlayOnlineRoute: typeof PlayOnlineRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  ShopRoute: ShopRoute,
   TermsRoute: TermsRoute,
   PlayModeRoute: PlayModeRoute,
   PlayOnlineRoute: PlayOnlineRoute,
@@ -271,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

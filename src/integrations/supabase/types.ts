@@ -140,47 +140,59 @@ export type Database = {
       games: {
         Row: {
           black_id: string
+          black_time_left_ms: number | null
           created_at: string
           fen: string
           id: string
+          last_move_at: string | null
           last_move_from: string | null
           last_move_san: string | null
           last_move_to: string | null
           pgn: string
           status: Database["public"]["Enums"]["game_status"]
+          time_control: number
           turn: string
           updated_at: string
           white_id: string
+          white_time_left_ms: number | null
           winner_id: string | null
         }
         Insert: {
           black_id: string
+          black_time_left_ms?: number | null
           created_at?: string
           fen?: string
           id?: string
+          last_move_at?: string | null
           last_move_from?: string | null
           last_move_san?: string | null
           last_move_to?: string | null
           pgn?: string
           status?: Database["public"]["Enums"]["game_status"]
+          time_control?: number
           turn?: string
           updated_at?: string
           white_id: string
+          white_time_left_ms?: number | null
           winner_id?: string | null
         }
         Update: {
           black_id?: string
+          black_time_left_ms?: number | null
           created_at?: string
           fen?: string
           id?: string
+          last_move_at?: string | null
           last_move_from?: string | null
           last_move_san?: string | null
           last_move_to?: string | null
           pgn?: string
           status?: Database["public"]["Enums"]["game_status"]
+          time_control?: number
           turn?: string
           updated_at?: string
           white_id?: string
+          white_time_left_ms?: number | null
           winner_id?: string | null
         }
         Relationships: [
@@ -210,14 +222,17 @@ export type Database = {
       matchmaking_queue: {
         Row: {
           created_at: string
+          time_control: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          time_control?: number
           user_id: string
         }
         Update: {
           created_at?: string
+          time_control?: number
           user_id?: string
         }
         Relationships: [
@@ -229,6 +244,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments: {
+        Row: {
+          amount_rial: number
+          authority: string | null
+          created_at: string
+          games_credited: number
+          gateway: string
+          id: string
+          paid_at: string | null
+          ref_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_rial: number
+          authority?: string | null
+          created_at?: string
+          games_credited: number
+          gateway?: string
+          id?: string
+          paid_at?: string | null
+          ref_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_rial?: number
+          authority?: string | null
+          created_at?: string
+          games_credited?: number
+          gateway?: string
+          id?: string
+          paid_at?: string | null
+          ref_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       pi_payments: {
         Row: {
@@ -266,39 +320,81 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          banned_until: string | null
           created_at: string
           draws: number
           id: string
+          is_permanently_banned: boolean
+          last_free_reset_date: string
           losses: number
           online_games_played: number
           paid_games_remaining: number
           rating: number
           username: string
+          warning_count: number
           wins: number
         }
         Insert: {
           avatar_url?: string | null
+          banned_until?: string | null
           created_at?: string
           draws?: number
           id: string
+          is_permanently_banned?: boolean
+          last_free_reset_date?: string
           losses?: number
           online_games_played?: number
           paid_games_remaining?: number
           rating?: number
           username: string
+          warning_count?: number
           wins?: number
         }
         Update: {
           avatar_url?: string | null
+          banned_until?: string | null
           created_at?: string
           draws?: number
           id?: string
+          is_permanently_banned?: boolean
+          last_free_reset_date?: string
           losses?: number
           online_games_played?: number
           paid_games_remaining?: number
           rating?: number
           username?: string
+          warning_count?: number
           wins?: number
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          context_id: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          reported_user_id: string
+          reporter_id: string
+          type: string
+        }
+        Insert: {
+          context_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_user_id: string
+          reporter_id: string
+          type: string
+        }
+        Update: {
+          context_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reported_user_id?: string
+          reporter_id?: string
+          type?: string
         }
         Relationships: []
       }
@@ -308,7 +404,9 @@ export type Database = {
     }
     Functions: {
       consume_online_game: { Args: { p_user: string }; Returns: Json }
-      find_or_join_match: { Args: { p_user: string }; Returns: string }
+      find_or_join_match:
+        | { Args: { p_user: string }; Returns: string }
+        | { Args: { p_time_control?: number; p_user: string }; Returns: string }
     }
     Enums: {
       friend_status: "pending" | "accepted" | "blocked"
