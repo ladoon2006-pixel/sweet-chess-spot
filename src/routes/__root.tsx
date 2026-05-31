@@ -74,27 +74,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Play chess online against AI, friends, or random opponents with live chat and friend requests." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Play chess online against AI, friends, or random opponents with live chat and friend requests." },
+      { title: "Chess Master — شطرنج آنلاین" },
+      { name: "description", content: "بازی شطرنج آنلاین، با دوست یا هوش مصنوعی، با چت زنده و سیستم دوستی." },
+      { property: "og:title", content: "Chess Master" },
+      { property: "og:description", content: "بازی شطرنج آنلاین با چت زنده و تایمر." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "Play chess online against AI, friends, or random opponents with live chat and friend requests." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f8b99381-59d5-4eb3-94df-0f5134118097/id-preview-b268858d--06f3e957-4b2c-49da-b4d1-ee3769c90821.lovable.app-1779544208123.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f8b99381-59d5-4eb3-94df-0f5134118097/id-preview-b268858d--06f3e957-4b2c-49da-b4d1-ee3769c90821.lovable.app-1779544208123.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
-    scripts: [
-      { src: "https://sdk.minepi.com/pi-sdk.js" },
+      { rel: "stylesheet", href: appCss },
     ],
   }),
   shellComponent: RootShell,
@@ -104,58 +92,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
-  const piFooter = `
-    (function(){
-      function init(){
-        if(!window.Pi) return;
-        try { window.Pi.init({ version: "2.0", sandbox: true }); } catch(e) { console.error("Pi.init failed", e); }
-      }
-      async function startPiAuth(){
-        if(!window.Pi) return;
-        try {
-          await window.Pi.authenticate(['username','payments'],
-            function(paymentId){ console.log("Incomplete:", paymentId); }
-          );
-          console.log("Authenticated");
-        } catch(e){ console.error("Pi auth failed", e); }
-      }
-      function bindPay(){
-        var btn = document.getElementById("pay");
-        if(!btn || btn.dataset.piBound) return;
-        btn.dataset.piBound = "1";
-        btn.onclick = async function(){
-          if(!window.Pi){ alert("Pi SDK not loaded"); return; }
-          try {
-            await window.Pi.createPayment(
-              { amount: 0.01, memo: "Testnet payment", metadata: { test: true } },
-              {
-                onReadyForServerApproval: function(id){ console.log("approval", id); },
-                onReadyForServerCompletion: function(id, txid){ console.log("completion", id, txid); },
-                onCancel: function(id){ console.log("cancel", id); },
-                onError: function(err){ console.error(err); }
-              }
-            );
-          } catch(e){ alert("خطا در پرداخت: " + e); }
-        };
-      }
-      window.addEventListener("load", function(){
-        init();
-        startPiAuth();
-        bindPay();
-        var mo = new MutationObserver(bindPay);
-        mo.observe(document.body, { childList: true, subtree: true });
-      });
-    })();
-  `;
   return (
-    <html lang="en">
+    <html lang="fa" dir="rtl">
       <head>
         <HeadContent />
       </head>
       <body>
         {children}
         <Scripts />
-        <script dangerouslySetInnerHTML={{ __html: piFooter }} />
       </body>
     </html>
   );

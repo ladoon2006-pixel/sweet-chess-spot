@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Globe, X } from "lucide-react";
+import { Globe, X, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/play/online")({
@@ -11,21 +11,28 @@ export const Route = createFileRoute("/play/online")({
   head: () => ({ meta: [{ title: "بازی آنلاین — Chess Master" }] }),
 });
 
+const TIME_OPTIONS = [
+  { value: 0, label: "بدون زمان" },
+  { value: 5, label: "۵ دقیقه" },
+  { value: 10, label: "۱۰ دقیقه" },
+  { value: 20, label: "۲۰ دقیقه" },
+];
+
 function OnlineMatch() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [searching, setSearching] = useState(false);
+  const [timeControl, setTimeControl] = useState(5);
   const subRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/" });
+    if (!loading && !user) nav({ to: "/auth" });
   }, [user, loading, nav]);
 
   const start = async () => {
     if (!user) return;
     setSearching(true);
 
-    // subscribe to new games for me BEFORE calling the rpc (avoid race)
     const ch = supabase
       .channel(`games-watch-${user.id}`)
       .on(
@@ -41,10 +48,12 @@ function OnlineMatch() {
       .subscribe();
     subRef.current = ch;
 
-    const { data, error } = await supabase.rpc("find_or_join_match", { p_user: user.id });
+    const { data, error } = await supabase.rpc("find_or_join_match", {
+      p_user: user.id,
+      p_time_control: timeControl,
+    });
     if (error) { toast.error(error.message); setSearching(false); return; }
     if (data) {
-      // matched instantly
       nav({ to: "/play/game/$gameId", params: { gameId: data as string } });
     }
   };
@@ -73,14 +82,41 @@ function OnlineMatch() {
 
       {!searching ? (
         <>
-          <p className="text-amber-100/80 mb-6 text-center">با یک حریف تصادفی روبه‌رو شو</p>
+          <p className="text-amber-100/80 mb-4 text-center">زمان بازی رو انتخاب کن:</p>
+
+          <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-6">
+            {TIME_OPTIONS.map((opt) => {
+              const active = timeControl === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setTimeControl(opt.value)}
+                  className={`rounded-xl border-2 px-4 py-3 flex items-center justify-center gap-2 font-bold transition-all ${
+                    active
+                      ? "border-amber-300 bg-amber-700/40 text-amber-50 ring-2 ring-amber-300/50"
+                      : "border-amber-900/60 bg-black/30 text-amber-100/80"
+                  }`}
+                >
+                  <Clock size={16} />
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
           <Button size="lg" onClick={start}>پیدا کردن حریف</Button>
+          <p className="text-xs text-amber-100/60 mt-3 text-center max-w-sm">
+            فقط با کسانی که همین زمان رو انتخاب کنن جور می‌شی
+          </p>
         </>
       ) : (
         <>
-          <div className="text-amber-100/80 mb-6 flex items-center gap-2">
+          <div className="text-amber-100/80 mb-2 flex items-center gap-2">
             <span className="animate-spin h-5 w-5 border-2 border-amber-300 border-t-transparent rounded-full" />
             در حال جستجوی حریف…
+          </div>
+          <div className="text-xs text-amber-200/70 mb-6">
+            زمان انتخابی: {TIME_OPTIONS.find((o) => o.value === timeControl)?.label}
           </div>
           <Button variant="destructive" onClick={cancel}><X size={16} /> لغو</Button>
         </>

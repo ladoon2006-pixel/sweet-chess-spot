@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
-import PiAuth from "@/components/PiAuth";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
-import { Crown, Globe, Users, Bot } from "lucide-react";
+import { Crown, Globe, Users, Bot, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -17,15 +17,17 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const nav = useNavigate();
 
-  const handleOnline = () => {
+  const requireAuth = (to: string) => {
     if (!user) {
-      toast.error("ابتدا با Pi Network وارد شوید");
-      return;
+      toast.error("ابتدا وارد حساب کاربری شو");
+      nav({ to: "/auth" });
+      return false;
     }
-    nav({ to: "/play/online" });
+    nav({ to });
+    return true;
   };
 
   return (
@@ -34,7 +36,6 @@ function Home() {
       className="relative min-h-screen w-full flex flex-col items-center overflow-hidden"
     >
       <div className="wood-bg absolute inset-0 -z-10" />
-      {/* floating neon orbs */}
       <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-fuchsia-500/30 blur-3xl -z-10" />
       <div className="pointer-events-none absolute top-1/3 -left-20 w-80 h-80 rounded-full bg-cyan-400/25 blur-3xl -z-10" />
       <div className="pointer-events-none absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-violet-500/25 blur-3xl -z-10" />
@@ -48,37 +49,24 @@ function Home() {
       </div>
 
       <div className="mt-12 w-full max-w-sm px-6 flex flex-col gap-4">
-        <MenuButton onClick={handleOnline} icon={<Globe size={22} />} label="بازی آنلاین" />
+        <MenuButton onClick={() => requireAuth("/play/online")} icon={<Globe size={22} />} label="بازی آنلاین" />
         <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
         <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3">
-        <PiAuth />
-        <button
-          onClick={async () => {
-            try {
-              const Pi = (window as any).Pi;
-              if (!Pi) { toast.error("Pi SDK بارگذاری نشد"); return; }
-              await Pi.init({ version: "2.0", sandbox: true });
-              await Pi.createPayment(
-                { amount: 0.01, memo: "Test payment", metadata: { test: true } },
-                {
-                  onReadyForServerApproval: (paymentId: string) => console.log("approval", paymentId),
-                  onReadyForServerCompletion: (paymentId: string, txid: string) => console.log("completion", paymentId, txid),
-                  onCancel: (paymentId: string) => console.log("cancel", paymentId),
-                  onError: (error: Error) => { console.error(error); toast.error(error.message); },
-                },
-              );
-            } catch (e: any) {
-              toast.error(e?.message || "خطا در پرداخت");
-            }
-          }}
-          id="pay"
-          className="wood-panel rounded-xl py-3 px-5 wood-text font-bold"
-        >
-          پرداخت تست‌نت 0.01 Pi
-        </button>
+        {user ? (
+          <div className="text-xs text-amber-100/80 flex items-center gap-3">
+            <span>وارد شده: <b>{user.user_metadata?.username ?? user.email}</b></span>
+            <button onClick={() => signOut()} className="underline inline-flex items-center gap-1">
+              <LogOut size={12} /> خروج
+            </button>
+          </div>
+        ) : (
+          <Button onClick={() => nav({ to: "/auth" })} variant="secondary">
+            <LogIn size={16} /> ورود / ثبت‌نام
+          </Button>
+        )}
       </div>
 
       <div className="h-28" />

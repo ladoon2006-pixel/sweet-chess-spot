@@ -1,13 +1,14 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Settings, User, Users } from "lucide-react";
+import { Home, Settings, User, Users, ShoppingBag } from "lucide-react";
 
 export default function BottomNav() {
   const { pathname } = useLocation();
   const items = [
     { to: "/", icon: Home, label: "خانه" },
-    { to: "/friends", icon: Users, label: "دوستان و چت" },
-    { to: "/settings", icon: Settings, label: "تنظیمات" },
+    { to: "/friends", icon: Users, label: "دوستان" },
+    { to: "/shop", icon: ShoppingBag, label: "خرید" },
     { to: "/profile", icon: User, label: "پروفایل" },
+    { to: "/settings", icon: Settings, label: "تنظیمات" },
   ] as const;
 
   return (
