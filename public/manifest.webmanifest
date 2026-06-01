@@ -1,0 +1,17 @@
+{
+  "name": "Chess Master — شطرنج آنلاین",
+  "short_name": "Chess Master",
+  "description": "بازی شطرنج آنلاین با دوست یا هوش مصنوعی",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0420",
+  "theme_color": "#1a0b3d",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/logo.jpeg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any" },
+    { "src": "/logo.jpeg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

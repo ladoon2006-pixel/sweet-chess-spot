@@ -3,8 +3,9 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
-import { Crown, Globe, Users, Bot, LogIn, LogOut } from "lucide-react";
+import { Globe, Users, Bot, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import logo from "@/assets/logo.jpeg";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -40,12 +41,14 @@ function Home() {
       <div className="pointer-events-none absolute top-1/3 -left-20 w-80 h-80 rounded-full bg-cyan-400/25 blur-3xl -z-10" />
       <div className="pointer-events-none absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-violet-500/25 blur-3xl -z-10" />
 
-      <div className="pt-12 sm:pt-16 flex flex-col items-center">
-        <Crown className="text-fuchsia-200 neon-pulse" size={56} />
-        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-wide wood-text" style={{ fontFamily: "serif" }}>
-          CHESS MASTER
-        </h1>
-        <div className="text-cyan-200/90 tracking-[0.4em] text-xs sm:text-sm mt-1" style={{ textShadow: "0 0 10px rgba(34,211,238,0.7)" }}>ONLINE</div>
+      <div className="pt-8 sm:pt-12 flex flex-col items-center">
+        <img
+          src={logo}
+          alt="Chess Master logo"
+          className="w-44 h-44 sm:w-52 sm:h-52 object-contain neon-pulse rounded-2xl"
+          style={{ filter: "drop-shadow(0 0 24px rgba(255,180,40,0.55))" }}
+        />
+        <div className="text-amber-200/90 tracking-[0.4em] text-xs sm:text-sm mt-3" style={{ textShadow: "0 0 10px rgba(255,200,80,0.7)" }}>ONLINE</div>
       </div>
 
       <div className="mt-12 w-full max-w-sm px-6 flex flex-col gap-4">

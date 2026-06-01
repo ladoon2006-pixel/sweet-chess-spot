@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
+import ChallengeListener from "@/components/ChallengeListener";
 
 import appCss from "../styles.css?url";
 
@@ -74,15 +75,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#1a0b3d" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Chess Master" },
       { title: "Chess Master — شطرنج آنلاین" },
       { name: "description", content: "بازی شطرنج آنلاین، با دوست یا هوش مصنوعی، با چت زنده و سیستم دوستی." },
       { property: "og:title", content: "Chess Master" },
       { property: "og:description", content: "بازی شطرنج آنلاین با چت زنده و تایمر." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: "/logo.jpeg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/logo.jpeg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/jpeg", href: "/logo.jpeg" },
+      { rel: "apple-touch-icon", href: "/logo.jpeg" },
     ],
   }),
   shellComponent: RootShell,
@@ -111,6 +122,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ChallengeListener />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>

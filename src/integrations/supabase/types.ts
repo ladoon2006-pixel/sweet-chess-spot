@@ -98,6 +98,36 @@ export type Database = {
           },
         ]
       }
+      game_challenges: {
+        Row: {
+          created_at: string
+          from_user: string
+          game_id: string | null
+          id: string
+          status: string
+          time_control: number
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          from_user: string
+          game_id?: string | null
+          id?: string
+          status?: string
+          time_control?: number
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          from_user?: string
+          game_id?: string | null
+          id?: string
+          status?: string
+          time_control?: number
+          to_user?: string
+        }
+        Relationships: []
+      }
       game_chat_messages: {
         Row: {
           content: string
@@ -403,6 +433,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_game_challenge: { Args: { p_challenge: string }; Returns: string }
       consume_online_game: { Args: { p_user: string }; Returns: Json }
       find_or_join_match:
         | { Args: { p_user: string }; Returns: string }

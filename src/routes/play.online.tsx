@@ -33,8 +33,10 @@ function OnlineMatch() {
     if (!user) return;
     setSearching(true);
 
+    // Subscribe FIRST and wait for SUBSCRIBED before calling RPC,
+    // otherwise the opponent's INSERT can fire before our channel is ready.
     const ch = supabase
-      .channel(`games-watch-${user.id}`)
+      .channel(`games-watch-${user.id}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "games", filter: `white_id=eq.${user.id}` },
@@ -44,9 +46,16 @@ function OnlineMatch() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "games", filter: `black_id=eq.${user.id}` },
         (p) => nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } }),
-      )
-      .subscribe();
+      );
     subRef.current = ch;
+
+    await new Promise<void>((resolve) => {
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") resolve();
+      });
+      // Safety: don't block forever
+      setTimeout(resolve, 2500);
+    });
 
     const { data, error } = await supabase.rpc("find_or_join_match", {
       p_user: user.id,

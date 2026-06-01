@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight } from "lucide-react";
+import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight, Swords } from "lucide-react";
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 const search = z.object({ with: z.string().optional(), tab: z.string().optional() });
 
@@ -41,6 +44,17 @@ function FriendsPage() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const [challenge, setChallenge] = useState<{ id: string; username: string } | null>(null);
+
+  const sendChallenge = async (toId: string, tc: number) => {
+    if (!user) return;
+    const { error } = await supabase.from("game_challenges").insert({
+      from_user: user.id, to_user: toId, time_control: tc, status: "pending",
+    });
+    if (error) toast.error(error.message);
+    else toast.success("دعوت ارسال شد — منتظر پاسخ دوست…");
+    setChallenge(null);
+  };
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/" });
@@ -211,6 +225,10 @@ function FriendsPage() {
                   <div className="text-sm"><b>{f.other?.username}</b> <span className="text-amber-200/70 text-xs">({f.other?.rating})</span></div>
                   <div className="flex gap-1 items-center">
                     {f.other && <ReportButton reportedUserId={f.other.id} type="profile" />}
+                    <Button size="sm" variant="secondary" title="دعوت به بازی"
+                      onClick={() => f.other && setChallenge({ id: f.other.id, username: f.other.username })}>
+                      <Swords size={14} />
+                    </Button>
                     <Button size="sm" onClick={() => f.other && openChat(f.other.id)}>
                       <MessageCircle size={14} />
                     </Button>
@@ -266,6 +284,27 @@ function FriendsPage() {
         </Tabs>
       </main>
       <BottomNav />
+
+      <Dialog open={!!challenge} onOpenChange={(o) => !o && setChallenge(null)}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>دعوت {challenge?.username} به بازی</DialogTitle>
+            <DialogDescription>زمان بازی رو انتخاب کن:</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 py-2">
+            {[
+              { v: 0, l: "بدون زمان" },
+              { v: 5, l: "۵ دقیقه" },
+              { v: 10, l: "۱۰ دقیقه" },
+              { v: 20, l: "۲۰ دقیقه" },
+            ].map((opt) => (
+              <Button key={opt.v} variant="secondary" onClick={() => challenge && sendChallenge(challenge.id, opt.v)}>
+                {opt.l}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
