@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight } from "lucide-react";
+import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight, Swords } from "lucide-react";
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 const search = z.object({ with: z.string().optional(), tab: z.string().optional() });
 
@@ -41,6 +44,17 @@ function FriendsPage() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const [challenge, setChallenge] = useState<{ id: string; username: string } | null>(null);
+
+  const sendChallenge = async (toId: string, tc: number) => {
+    if (!user) return;
+    const { error } = await supabase.from("game_challenges").insert({
+      from_user: user.id, to_user: toId, time_control: tc, status: "pending",
+    });
+    if (error) toast.error(error.message);
+    else toast.success("دعوت ارسال شد — منتظر پاسخ دوست…");
+    setChallenge(null);
+  };
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/" });
