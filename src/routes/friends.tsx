@@ -225,6 +225,10 @@ function FriendsPage() {
                   <div className="text-sm"><b>{f.other?.username}</b> <span className="text-amber-200/70 text-xs">({f.other?.rating})</span></div>
                   <div className="flex gap-1 items-center">
                     {f.other && <ReportButton reportedUserId={f.other.id} type="profile" />}
+                    <Button size="sm" variant="secondary" title="دعوت به بازی"
+                      onClick={() => f.other && setChallenge({ id: f.other.id, username: f.other.username })}>
+                      <Swords size={14} />
+                    </Button>
                     <Button size="sm" onClick={() => f.other && openChat(f.other.id)}>
                       <MessageCircle size={14} />
                     </Button>
@@ -280,6 +284,27 @@ function FriendsPage() {
         </Tabs>
       </main>
       <BottomNav />
+
+      <Dialog open={!!challenge} onOpenChange={(o) => !o && setChallenge(null)}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>دعوت {challenge?.username} به بازی</DialogTitle>
+            <DialogDescription>زمان بازی رو انتخاب کن:</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 py-2">
+            {[
+              { v: 0, l: "بدون زمان" },
+              { v: 5, l: "۵ دقیقه" },
+              { v: 10, l: "۱۰ دقیقه" },
+              { v: 20, l: "۲۰ دقیقه" },
+            ].map((opt) => (
+              <Button key={opt.v} variant="secondary" onClick={() => challenge && sendChallenge(challenge.id, opt.v)}>
+                {opt.l}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
