@@ -125,11 +125,13 @@ function AuthPage() {
           <TabsContent value="signin" className="space-y-3 mt-4">
             <div className="space-y-1">
               <Label className="text-amber-100">ایمیل</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+              <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com"
+                className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
             </div>
             <div className="space-y-1">
               <Label className="text-amber-100">رمز عبور</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
+              <Input dir="ltr" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••"
+                className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
             </div>
             <Button onClick={handleSignIn} disabled={busy} className="w-full">
               <Mail size={16} /> ورود با ایمیل
@@ -141,19 +143,25 @@ function AuthPage() {
               <>
                 <div className="space-y-1">
                   <Label className="text-amber-100">نام کاربری</Label>
-                  <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="نام نمایشی" />
+                  <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="نام نمایشی"
+                    className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-amber-100">ایمیل</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+                  <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com"
+                    className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-amber-100">رمز عبور (حداقل ۶ کاراکتر)</Label>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
+                  <Input dir="ltr" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••"
+                    className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
                 </div>
                 <Button onClick={handleSendOtp} disabled={busy} className="w-full">
                   ارسال کد تأیید
                 </Button>
+                <p className="text-[11px] text-amber-100/70 text-center">
+                  بعد از ثبت‌نام، یک کد ۶ رقمی به ایمیلت ارسال می‌شه. بدون وارد کردن کد، حساب فعال نمی‌شه.
+                </p>
               </>
             ) : (
               <>
@@ -166,7 +174,7 @@ function AuthPage() {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••••"
-                  className="text-center text-2xl tracking-widest"
+                  className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60 text-center text-2xl tracking-widest"
                 />
                 <Button onClick={handleVerifyOtp} disabled={busy} className="w-full">
                   تأیید و ورود
