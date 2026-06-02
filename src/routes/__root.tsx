@@ -10,6 +10,7 @@ import {
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 import ChallengeListener from "@/components/ChallengeListener";
+import { playMenuClick } from "@/lib/chessSound";
 
 import appCss from "../styles.css?url";
 
@@ -123,9 +124,28 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ChallengeListener />
+        <MenuClickSounds />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function MenuClickSounds() {
+  if (typeof window !== "undefined") {
+    document.documentElement.dataset.menuSounds = "ready";
+  }
+
+  React.useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const link = target?.closest('a[href^="/"]');
+      if (link) playMenuClick();
+    };
+    window.addEventListener("click", onClick, { capture: true });
+    return () => window.removeEventListener("click", onClick, { capture: true });
+  }, []);
+
+  return null;
 }
