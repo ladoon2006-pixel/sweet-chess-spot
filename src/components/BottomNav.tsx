@@ -1,6 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Home, Settings, User, Users, ShoppingBag } from "lucide-react";
-import { playMenuClick } from "@/lib/chessSound";
 
 export default function BottomNav() {
   const { pathname } = useLocation();
@@ -23,7 +22,6 @@ export default function BottomNav() {
           <Link
             key={to}
             to={to}
-            onClick={() => playMenuClick()}
             className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${
               active ? "bg-black/30 wood-text" : "text-amber-100/70 hover:wood-text"
             }`}

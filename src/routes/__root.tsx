@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   Outlet,
   Link,
@@ -133,11 +134,7 @@ function RootComponent() {
 }
 
 function MenuClickSounds() {
-  if (typeof window !== "undefined") {
-    document.documentElement.dataset.menuSounds = "ready";
-  }
-
-  React.useEffect(() => {
+  useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       const link = target?.closest('a[href^="/"]');
