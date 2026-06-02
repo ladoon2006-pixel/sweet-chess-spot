@@ -1,5 +1,6 @@
 // Real chess sounds (Lichess open-source pack served from /public/sounds).
 type SoundKind =
+  | "click"
   | "move"
   | "capture"
   | "check"
@@ -12,6 +13,7 @@ type SoundKind =
   | "lowtime";
 
 const FILES: Record<SoundKind, string> = {
+  click: "/sounds/Move.mp3",
   move: "/sounds/Move.mp3",
   capture: "/sounds/Capture.mp3",
   check: "/sounds/Check.mp3",
@@ -42,11 +44,15 @@ export function playSound(kind: SoundKind = "move") {
   try {
     // clone for overlapping playback
     const node = a.cloneNode(true) as HTMLAudioElement;
-    node.volume = 0.85;
+    node.volume = kind === "click" ? 0.28 : 0.85;
     void node.play().catch(() => {});
   } catch {
     /* ignore */
   }
+}
+
+export function playMenuClick() {
+  playSound("click");
 }
 
 // Warm up on first user interaction (mobile autoplay policies).

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Globe, X, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { playMenuClick } from "@/lib/chessSound";
 
 export const Route = createFileRoute("/play/online")({
   component: OnlineMatch,
@@ -24,6 +25,8 @@ function OnlineMatch() {
   const [searching, setSearching] = useState(false);
   const [timeControl, setTimeControl] = useState(5);
   const subRef = useRef<any>(null);
+  const pollRef = useRef<number | null>(null);
+  const searchStartedAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/auth" });
@@ -31,7 +34,27 @@ function OnlineMatch() {
 
   const start = async () => {
     if (!user) return;
+    playMenuClick();
     setSearching(true);
+    searchStartedAtRef.current = new Date().toISOString();
+
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    pollRef.current = window.setInterval(async () => {
+      if (!user || !searchStartedAtRef.current) return;
+      const { data } = await supabase
+        .from("games")
+        .select("id,created_at")
+        .or(`white_id.eq.${user.id},black_id.eq.${user.id}`)
+        .eq("status", "active")
+        .gte("created_at", searchStartedAtRef.current)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.id) {
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        nav({ to: "/play/game/$gameId", params: { gameId: data.id } });
+      }
+    }, 1800);
 
     // Subscribe FIRST and wait for SUBSCRIBED before calling RPC,
     // otherwise the opponent's INSERT can fire before our channel is ready.
@@ -40,12 +63,18 @@ function OnlineMatch() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "games", filter: `white_id=eq.${user.id}` },
-        (p) => nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } }),
+        (p) => {
+          if (pollRef.current) window.clearInterval(pollRef.current);
+          nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } });
+        },
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "games", filter: `black_id=eq.${user.id}` },
-        (p) => nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } }),
+        (p) => {
+          if (pollRef.current) window.clearInterval(pollRef.current);
+          nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } });
+        },
       );
     subRef.current = ch;
 
@@ -61,15 +90,23 @@ function OnlineMatch() {
       p_user: user.id,
       p_time_control: timeControl,
     });
-    if (error) { toast.error(error.message); setSearching(false); return; }
+    if (error) {
+      toast.error(error.message);
+      if (pollRef.current) window.clearInterval(pollRef.current);
+      setSearching(false);
+      return;
+    }
     if (data) {
+      if (pollRef.current) window.clearInterval(pollRef.current);
       nav({ to: "/play/game/$gameId", params: { gameId: data as string } });
     }
   };
 
   const cancel = async () => {
     if (!user) return;
+    playMenuClick();
     if (subRef.current) supabase.removeChannel(subRef.current);
+    if (pollRef.current) window.clearInterval(pollRef.current);
     await supabase.from("matchmaking_queue").delete().eq("user_id", user.id);
     setSearching(false);
   };
@@ -77,6 +114,7 @@ function OnlineMatch() {
   useEffect(() => {
     return () => {
       if (subRef.current) supabase.removeChannel(subRef.current);
+      if (pollRef.current) window.clearInterval(pollRef.current);
       if (user) supabase.from("matchmaking_queue").delete().eq("user_id", user.id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,7 +137,7 @@ function OnlineMatch() {
               return (
                 <button
                   key={opt.value}
-                  onClick={() => setTimeControl(opt.value)}
+                  onClick={() => { playMenuClick(); setTimeControl(opt.value); }}
                   className={`rounded-xl border-2 px-4 py-3 flex items-center justify-center gap-2 font-bold transition-all ${
                     active
                       ? "border-amber-300 bg-amber-700/40 text-amber-50 ring-2 ring-amber-300/50"

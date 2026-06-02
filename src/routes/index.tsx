@@ -3,9 +3,9 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
-import { Globe, Users, Bot, LogIn, LogOut } from "lucide-react";
+import { Bot, Crown, Globe, LogIn, LogOut, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
-import logo from "@/assets/logo.jpeg";
+import { playMenuClick } from "@/lib/chessSound";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -37,21 +37,22 @@ function Home() {
       className="relative min-h-screen w-full flex flex-col items-center overflow-hidden"
     >
       <div className="wood-bg absolute inset-0 -z-10" />
-      <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-fuchsia-500/30 blur-3xl -z-10" />
-      <div className="pointer-events-none absolute top-1/3 -left-20 w-80 h-80 rounded-full bg-cyan-400/25 blur-3xl -z-10" />
-      <div className="pointer-events-none absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-violet-500/25 blur-3xl -z-10" />
 
-      <div className="pt-8 sm:pt-12 flex flex-col items-center">
-        <img
-          src={logo}
-          alt="Chess Master logo"
-          className="w-44 h-44 sm:w-52 sm:h-52 object-contain neon-pulse rounded-2xl"
-          style={{ filter: "drop-shadow(0 0 24px rgba(255,180,40,0.55))" }}
-        />
-        <div className="text-amber-200/90 tracking-[0.4em] text-xs sm:text-sm mt-3" style={{ textShadow: "0 0 10px rgba(255,200,80,0.7)" }}>ONLINE</div>
+      <div className="pt-10 sm:pt-12 flex flex-col items-center px-6 text-center">
+        <div className="brand-emblem neon-pulse" aria-hidden="true">
+          <Crown size={48} strokeWidth={1.6} />
+          <span className="brand-emblem__piece">♞</span>
+        </div>
+        <div className="mt-5 flex items-center gap-2 text-amber-200/85 text-xs sm:text-sm font-bold tracking-[0.32em]">
+          <Sparkles size={14} /> SWEET CHESS
+        </div>
+        <h1 className="mt-3 wood-text text-3xl sm:text-4xl font-black leading-tight">قلمرو شطرنج آنلاین</h1>
+        <p className="mt-2 max-w-xs text-sm leading-7 text-amber-100/70">
+          بازی سریع، چت زنده و رقابت دوستانه با حال‌وهوای طلایی لوگو
+        </p>
       </div>
 
-      <div className="mt-12 w-full max-w-sm px-6 flex flex-col gap-4">
+      <div className="mt-8 w-full max-w-sm px-6 flex flex-col gap-4">
         <MenuButton onClick={() => requireAuth("/play/online")} icon={<Globe size={22} />} label="بازی آنلاین" />
         <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
         <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
@@ -61,12 +62,12 @@ function Home() {
         {user ? (
           <div className="text-xs text-amber-100/80 flex items-center gap-3">
             <span>وارد شده: <b>{user.user_metadata?.username ?? user.email}</b></span>
-            <button onClick={() => signOut()} className="underline inline-flex items-center gap-1">
+            <button onClick={() => { playMenuClick(); signOut(); }} className="underline inline-flex items-center gap-1">
               <LogOut size={12} /> خروج
             </button>
           </div>
         ) : (
-          <Button onClick={() => nav({ to: "/auth" })} variant="secondary">
+          <Button onClick={() => { playMenuClick(); nav({ to: "/auth" }); }} variant="secondary">
             <LogIn size={16} /> ورود / ثبت‌نام
           </Button>
         )}
@@ -84,5 +85,5 @@ function MenuButton({
   const cls =
     "wood-panel rounded-xl py-4 px-5 flex items-center justify-center gap-3 wood-text text-lg font-bold active:translate-y-0.5 transition-transform";
   if (to) return <Link to={to} className={cls}>{icon}<span>{label}</span></Link>;
-  return <button onClick={onClick} className={cls}>{icon}<span>{label}</span></button>;
+  return <button onClick={() => { playMenuClick(); onClick?.(); }} className={cls}>{icon}<span>{label}</span></button>;
 }
