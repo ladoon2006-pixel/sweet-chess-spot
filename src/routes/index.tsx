@@ -84,6 +84,6 @@ function MenuButton({
 }: { to?: string; onClick?: () => void; icon: React.ReactNode; label: string }) {
   const cls =
     "wood-panel rounded-xl py-4 px-5 flex items-center justify-center gap-3 wood-text text-lg font-bold active:translate-y-0.5 transition-transform";
-  if (to) return <Link to={to} onClick={() => playMenuClick()} className={cls}>{icon}<span>{label}</span></Link>;
+  if (to) return <Link to={to} className={cls}>{icon}<span>{label}</span></Link>;
   return <button onClick={() => { playMenuClick(); onClick?.(); }} className={cls}>{icon}<span>{label}</span></button>;
 }
