@@ -26,11 +26,30 @@ function OnlineMatch() {
   const [timeControl, setTimeControl] = useState(5);
   const subRef = useRef<any>(null);
   const pollRef = useRef<number | null>(null);
+  const retryRef = useRef<number | null>(null);
   const searchStartedAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/auth" });
   }, [user, loading, nav]);
+
+  const goToGame = (gameId: string) => {
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    if (retryRef.current) window.clearInterval(retryRef.current);
+    nav({ to: "/play/game/$gameId", params: { gameId } });
+  };
+
+  const tryMatch = async (uid: string, tc: number) => {
+    const { data, error } = await supabase.rpc("find_or_join_match", {
+      p_user: uid,
+      p_time_control: tc,
+    });
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
+    return (data as string | null) ?? null;
+  };
 
   const start = async () => {
     if (!user) return;
@@ -38,6 +57,26 @@ function OnlineMatch() {
     setSearching(true);
     searchStartedAtRef.current = new Date().toISOString();
 
+    // Subscribe FIRST so the opponent's INSERT doesn't fire before our channel is ready.
+    const ch = supabase
+      .channel(`games-watch-${user.id}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "games", filter: `white_id=eq.${user.id}` },
+        (p) => goToGame((p.new as any).id),
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "games", filter: `black_id=eq.${user.id}` },
+        (p) => goToGame((p.new as any).id),
+      );
+    subRef.current = ch;
+    await new Promise<void>((resolve) => {
+      ch.subscribe((status) => { if (status === "SUBSCRIBED") resolve(); });
+      setTimeout(resolve, 2500);
+    });
+
+    // Polling fallback for new games (in case realtime is delayed)
     if (pollRef.current) window.clearInterval(pollRef.current);
     pollRef.current = window.setInterval(async () => {
       if (!user || !searchStartedAtRef.current) return;
@@ -50,56 +89,21 @@ function OnlineMatch() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data?.id) {
-        if (pollRef.current) window.clearInterval(pollRef.current);
-        nav({ to: "/play/game/$gameId", params: { gameId: data.id } });
-      }
-    }, 1800);
+      if (data?.id) goToGame(data.id);
+    }, 1500);
 
-    // Subscribe FIRST and wait for SUBSCRIBED before calling RPC,
-    // otherwise the opponent's INSERT can fire before our channel is ready.
-    const ch = supabase
-      .channel(`games-watch-${user.id}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "games", filter: `white_id=eq.${user.id}` },
-        (p) => {
-          if (pollRef.current) window.clearInterval(pollRef.current);
-          nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "games", filter: `black_id=eq.${user.id}` },
-        (p) => {
-          if (pollRef.current) window.clearInterval(pollRef.current);
-          nav({ to: "/play/game/$gameId", params: { gameId: (p.new as any).id } });
-        },
-      );
-    subRef.current = ch;
+    // First attempt
+    const gid = await tryMatch(user.id, timeControl);
+    if (gid) { goToGame(gid); return; }
 
-    await new Promise<void>((resolve) => {
-      ch.subscribe((status) => {
-        if (status === "SUBSCRIBED") resolve();
-      });
-      // Safety: don't block forever
-      setTimeout(resolve, 2500);
-    });
-
-    const { data, error } = await supabase.rpc("find_or_join_match", {
-      p_user: user.id,
-      p_time_control: timeControl,
-    });
-    if (error) {
-      toast.error(error.message);
-      if (pollRef.current) window.clearInterval(pollRef.current);
-      setSearching(false);
-      return;
-    }
-    if (data) {
-      if (pollRef.current) window.clearInterval(pollRef.current);
-      nav({ to: "/play/game/$gameId", params: { gameId: data as string } });
-    }
+    // Retry loop — fixes the race where two players queue at the same instant
+    // and neither sees the other on the first call (especially for "no timer").
+    if (retryRef.current) window.clearInterval(retryRef.current);
+    retryRef.current = window.setInterval(async () => {
+      if (!user) return;
+      const g = await tryMatch(user.id, timeControl);
+      if (g) goToGame(g);
+    }, 3500);
   };
 
   const cancel = async () => {
@@ -107,6 +111,7 @@ function OnlineMatch() {
     playMenuClick();
     if (subRef.current) supabase.removeChannel(subRef.current);
     if (pollRef.current) window.clearInterval(pollRef.current);
+    if (retryRef.current) window.clearInterval(retryRef.current);
     await supabase.from("matchmaking_queue").delete().eq("user_id", user.id);
     setSearching(false);
   };
@@ -115,6 +120,7 @@ function OnlineMatch() {
     return () => {
       if (subRef.current) supabase.removeChannel(subRef.current);
       if (pollRef.current) window.clearInterval(pollRef.current);
+      if (retryRef.current) window.clearInterval(retryRef.current);
       if (user) supabase.from("matchmaking_queue").delete().eq("user_id", user.id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
