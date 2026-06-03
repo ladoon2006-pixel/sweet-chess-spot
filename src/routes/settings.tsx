@@ -29,7 +29,7 @@ function SettingsPage() {
 
       <main className="max-w-3xl mx-auto space-y-6">
         {/* Sound */}
-        <section className="rounded-2xl border bg-card p-5">
+        <section className="rounded-2xl border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-semibold">صدای حرکت مهره‌ها</h2>
@@ -41,6 +41,29 @@ function SettingsPage() {
                 s.setSoundEnabled(v);
                 if (v) playSound("move");
               }}
+            />
+          </div>
+          <div className="flex items-center justify-between border-t pt-4">
+            <div>
+              <h2 className="font-semibold">صدای دریافت پیام چت</h2>
+              <p className="text-sm text-muted-foreground">وقتی حریف پیامی می‌فرسته صدا پخش بشه</p>
+            </div>
+            <Switch
+              checked={s.chatSoundEnabled}
+              onCheckedChange={(v) => {
+                s.setChatSoundEnabled(v);
+                if (v) playSound("notify");
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between border-t pt-4">
+            <div>
+              <h2 className="font-semibold">دریافت چت در بازی</h2>
+              <p className="text-sm text-muted-foreground">اگر خاموش باشه، کسی نمی‌تونه بهت پیام بده</p>
+            </div>
+            <Switch
+              checked={s.chatEnabled}
+              onCheckedChange={(v) => s.setChatEnabled(v)}
             />
           </div>
         </section>

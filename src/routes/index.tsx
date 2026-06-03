@@ -3,7 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
-import { Bot, Crown, Globe, LogIn, LogOut, Sparkles, Users } from "lucide-react";
+import { Bot, Crown, Globe, LogIn, LogOut, Sparkles, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { playMenuClick } from "@/lib/chessSound";
 
@@ -11,24 +11,23 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "Chess Master — شطرنج آنلاین" },
+      { title: "Sweet Chess — شطرنج آنلاین" },
       { name: "description", content: "بازی شطرنج آنلاین، با دوست یا هوش مصنوعی، با چت زنده و سیستم دوستی." },
     ],
   }),
 });
 
 function Home() {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const nav = useNavigate();
 
   const requireAuth = (to: string) => {
     if (!user) {
-      toast.error("ابتدا وارد حساب کاربری شو");
+      toast.error("ابتدا وارد حساب کاربری شو و ایمیلت رو تأیید کن");
       nav({ to: "/auth" });
-      return false;
+      return;
     }
     nav({ to });
-    return true;
   };
 
   return (
@@ -52,26 +51,37 @@ function Home() {
         </p>
       </div>
 
-      <div className="mt-8 w-full max-w-sm px-6 flex flex-col gap-4">
-        <MenuButton onClick={() => requireAuth("/play/online")} icon={<Globe size={22} />} label="بازی آنلاین" />
-        <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
-        <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
+      {!loading && !user && (
+        <div className="mt-6 mx-6 wood-panel rounded-xl px-4 py-3 flex items-center gap-2 text-amber-100 text-sm max-w-sm">
+          <Lock size={18} />
+          <span>برای دیدن و شروع بازی‌ها، اول وارد حسابت شو.</span>
+        </div>
+      )}
+
+      <div className="mt-6 w-full max-w-sm px-6 flex flex-col gap-4">
+        {user ? (
+          <>
+            <MenuButton onClick={() => requireAuth("/play/online")} icon={<Globe size={22} />} label="بازی آنلاین" />
+            <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
+            <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
+          </>
+        ) : (
+          <Button onClick={() => { playMenuClick(); nav({ to: "/auth" }); }} size="lg" className="w-full text-lg">
+            <LogIn size={18} /> ورود / ثبت‌نام با ایمیل
+          </Button>
+        )}
       </div>
 
-      <div className="mt-6 flex flex-col items-center gap-3">
-        {user ? (
+      {user && (
+        <div className="mt-6 flex flex-col items-center gap-3">
           <div className="text-xs text-amber-100/80 flex items-center gap-3">
             <span>وارد شده: <b>{user.user_metadata?.username ?? user.email}</b></span>
             <button onClick={() => { playMenuClick(); signOut(); }} className="underline inline-flex items-center gap-1">
               <LogOut size={12} /> خروج
             </button>
           </div>
-        ) : (
-          <Button onClick={() => { playMenuClick(); nav({ to: "/auth" }); }} variant="secondary">
-            <LogIn size={16} /> ورود / ثبت‌نام
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="h-28" />
       <BottomNav />

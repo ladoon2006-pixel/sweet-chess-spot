@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Move, type Square } from "chess.js";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Flag, Send, MessageCircle } from "lucide-react";
+import { Flag, Send, MessageCircle, MessageCircleOff, Home as HomeIcon } from "lucide-react";
 import { toast } from "sonner";
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
@@ -39,31 +39,49 @@ interface GameRow {
   last_move_from: string | null;
   last_move_to: string | null;
   last_move_san: string | null;
+  time_control: number;
+  white_time_left_ms: number | null;
+  black_time_left_ms: number | null;
+  last_move_at: string | null;
 }
 
 interface ChatRow { id: string; sender_id: string; content: string; created_at: string; }
+
+function fmtTime(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) return "∞";
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, "0")}`;
+}
 
 function OnlineGame() {
   const { gameId } = useParams({ from: "/play/game/$gameId" });
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const { boardThemeIdx, pieceThemeIdx, soundEnabled } = useSettings();
+  const { boardThemeIdx, pieceThemeIdx, soundEnabled, chatSoundEnabled, chatEnabled, setChatEnabled } = useSettings();
   const board = BOARD_THEMES[boardThemeIdx];
   const piecesT = PIECE_THEMES[pieceThemeIdx];
 
   const [game, setGame] = useState<GameRow | null>(null);
   const [opp, setOpp] = useState<{ id: string; username: string; rating: number } | null>(null);
+  const [me, setMe] = useState<{ id: string; username: string; rating: number } | null>(null);
   const chessRef = useRef(new Chess());
   const [, force] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
   const [targets, setTargets] = useState<Move[]>([]);
   const [promo, setPromo] = useState<{ from: Square; to: Square } | null>(null);
   const [endMsg, setEndMsg] = useState<string | null>(null);
+  const [endTone, setEndTone] = useState<"win" | "lose" | "draw" | null>(null);
+  const endSoundPlayedRef = useRef(false);
 
   const [chat, setChat] = useState<ChatRow[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatText, setChatText] = useState("");
   const chatEnd = useRef<HTMLDivElement>(null);
+
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/" });
@@ -114,12 +132,14 @@ function OnlineGame() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [gameId, soundEnabled]);
 
-  // load opponent profile
+  // load opponent + me profile
   useEffect(() => {
     if (!game || !user) return;
     const otherId = game.white_id === user.id ? game.black_id : game.white_id;
-    supabase.from("profiles").select("id,username,rating").eq("id", otherId).single().then(({ data }) => {
-      if (data) setOpp(data as any);
+    supabase.from("profiles").select("id,username,rating").in("id", [otherId, user.id]).then(({ data }) => {
+      const list = (data ?? []) as any[];
+      setOpp(list.find((p) => p.id === otherId) ?? null);
+      setMe(list.find((p) => p.id === user.id) ?? null);
     });
   }, [game?.white_id, game?.black_id, user?.id]);
 
@@ -131,23 +151,65 @@ function OnlineGame() {
     const ch = supabase
       .channel(`gchat-${gameId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_chat_messages", filter: `game_id=eq.${gameId}` }, (p) => {
-        setChat((c) => [...c, p.new as ChatRow]);
-        if (soundEnabled) playSound("notify");
+        const row = p.new as ChatRow;
+        setChat((c) => [...c, row]);
+        // Only play sound for messages I receive from others
+        if (chatEnabled && chatSoundEnabled && row.sender_id !== user?.id) {
+          playSound("notify");
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [gameId, soundEnabled]);
+  }, [gameId, chatSoundEnabled, chatEnabled, user?.id]);
 
   useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [chat, chatOpen]);
 
+  // Live ticking for timers
+  useEffect(() => {
+    if (!game || game.status !== "active" || !game.time_control) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 500);
+    return () => window.clearInterval(id);
+  }, [game?.status, game?.time_control]);
+
+  // Browser unload during active game → mark resign
+  useEffect(() => {
+    if (!game || game.status !== "active" || !user) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [game?.status, user?.id]);
+
   const showEnd = (g: GameRow) => {
+    const meWon = g.winner_id && g.winner_id === user?.id;
+    const otherWon = g.winner_id && g.winner_id !== user?.id;
     if (g.status === "checkmate") {
-      const winner = g.winner_id === user?.id ? "شما" : opp?.username ?? "حریف";
+      const winner = meWon ? "شما" : opp?.username ?? "حریف";
       setEndMsg(`کیش و مات! ${winner} برنده شد.`);
+      setEndTone(meWon ? "win" : "lose");
     } else if (g.status === "resigned") {
-      setEndMsg(g.winner_id === user?.id ? "حریف تسلیم شد. شما برنده!" : "شما تسلیم شدید.");
-    } else if (g.status === "stalemate") setEndMsg("پات! بازی مساوی شد.");
-    else if (g.status === "draw") setEndMsg("بازی مساوی شد.");
+      setEndMsg(meWon ? "حریف تسلیم شد. شما برنده!" : "شما تسلیم شدید.");
+      setEndTone(meWon ? "win" : "lose");
+    } else if (g.status === "abandoned") {
+      setEndMsg(meWon ? "حریف ترک کرد. شما برنده!" : "بازی پایان یافت.");
+      setEndTone(meWon ? "win" : otherWon ? "lose" : "draw");
+    } else if (g.status === "stalemate") {
+      setEndMsg("پات! بازی مساوی شد.");
+      setEndTone("draw");
+    } else if (g.status === "draw") {
+      setEndMsg("بازی مساوی شد.");
+      setEndTone("draw");
+    }
+
+    if (!endSoundPlayedRef.current && soundEnabled) {
+      endSoundPlayedRef.current = true;
+      if (meWon) playSound("victory");
+      else if (otherWon) playSound("defeat");
+      else playSound("draw");
+    }
   };
 
   const sendMove = async (m: Move) => {
@@ -166,31 +228,46 @@ function OnlineGame() {
       if (g.inCheck() && status === "active") setTimeout(() => playSound("check"), 80);
     }
 
+    // Timer accounting
+    const update: any = {
+      fen: g.fen(),
+      pgn: g.pgn(),
+      turn: g.turn(),
+      last_move_from: m.from,
+      last_move_to: m.to,
+      last_move_san: m.san,
+      status,
+      winner_id,
+    };
+    if (game.time_control > 0 && game.last_move_at) {
+      const elapsed = Date.now() - new Date(game.last_move_at).getTime();
+      const myKey = myColor === "w" ? "white_time_left_ms" : "black_time_left_ms";
+      const remaining = Math.max(0, (game[myKey] ?? game.time_control * 60_000) - elapsed);
+      update[myKey] = remaining;
+      update.last_move_at = new Date().toISOString();
+      if (remaining === 0 && status === "active") {
+        update.status = "resigned";
+        update.winner_id = myColor === "w" ? game.black_id : game.white_id;
+      }
+    } else if (game.time_control > 0) {
+      update.last_move_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from("games")
-      .update({
-        fen: g.fen(),
-        pgn: g.pgn(),
-        turn: g.turn(),
-        last_move_from: m.from,
-        last_move_to: m.to,
-        last_move_san: m.san,
-        status,
-        winner_id,
-      })
+      .update(update)
       .eq("id", game.id);
     if (error) { toast.error(error.message); return; }
 
-    if (status !== "active") {
-      await updateRatings(status, winner_id);
+    if (update.status !== "active") {
+      await updateRatings(update.status, update.winner_id);
     }
   };
 
   const updateRatings = async (status: GameRow["status"], winner_id: string | null) => {
     if (!game) return;
-    if (status === "checkmate" && winner_id) {
+    if ((status === "checkmate" || status === "resigned" || status === "abandoned") && winner_id) {
       const loser = winner_id === game.white_id ? game.black_id : game.white_id;
-      await supabase.rpc as any; // skip — handled below with simple updates
       const [{ data: w }, { data: l }] = await Promise.all([
         supabase.from("profiles").select("rating,wins").eq("id", winner_id).single(),
         supabase.from("profiles").select("rating,losses").eq("id", loser).single(),
@@ -243,7 +320,21 @@ function OnlineGame() {
     if (!game || !user) return;
     const winner = user.id === game.white_id ? game.black_id : game.white_id;
     await supabase.from("games").update({ status: "resigned", winner_id: winner }).eq("id", game.id);
-    await updateRatings("checkmate", winner);
+    await updateRatings("resigned", winner);
+  };
+
+  const requestLeave = () => {
+    if (!game || game.status !== "active") {
+      nav({ to: "/" });
+      return;
+    }
+    setConfirmLeave(true);
+  };
+
+  const confirmAndLeave = async () => {
+    setConfirmLeave(false);
+    await resign();
+    nav({ to: "/" });
   };
 
   const sendChat = async () => {
@@ -258,6 +349,23 @@ function OnlineGame() {
   };
 
   if (!game) return <div className="min-h-screen flex items-center justify-center text-amber-50">در حال بارگذاری…</div>;
+
+  // Compute live remaining time for the active player
+  let liveWhite = game.white_time_left_ms;
+  let liveBlack = game.black_time_left_ms;
+  if (game.status === "active" && game.time_control > 0 && game.last_move_at) {
+    const elapsed = Date.now() - new Date(game.last_move_at).getTime();
+    if (game.turn === "w" && liveWhite !== null && liveWhite !== undefined) {
+      liveWhite = Math.max(0, liveWhite - elapsed);
+    }
+    if (game.turn === "b" && liveBlack !== null && liveBlack !== undefined) {
+      liveBlack = Math.max(0, liveBlack - elapsed);
+    }
+  }
+  const myTime = myColor === "w" ? liveWhite : liveBlack;
+  const oppTime = myColor === "w" ? liveBlack : liveWhite;
+  // suppress unused-tick warning
+  void tick;
 
   const filesAll = ["a","b","c","d","e","f","g","h"];
   const ranksAll = [8,7,6,5,4,3,2,1];
@@ -278,19 +386,40 @@ function OnlineGame() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-br from-amber-950 via-stone-900 to-stone-950 text-amber-50 p-3 pb-4">
-      <header className="max-w-5xl mx-auto flex items-center justify-between mb-3">
-        <Link to="/" className="text-sm">← خانه</Link>
-        <div className="text-center text-sm">
-          <div className="font-bold">{opp?.username ?? "حریف"} <span className="text-amber-200/70">({opp?.rating ?? "—"})</span></div>
-          <div className="text-xs text-amber-200/70">
-            {game.status === "active" ? (isMyTurn ? "نوبت شماست" : "نوبت حریف…") : "بازی تمام شد"}
+      <header className="max-w-5xl mx-auto flex items-center justify-between mb-2">
+        <button onClick={requestLeave} className="text-sm flex items-center gap-1 wood-panel px-2 py-1 rounded">
+          <HomeIcon size={14} /> خانه
+        </button>
+        <div className={`text-center px-3 py-1 rounded-lg ${isMyTurn ? "bg-amber-500/30 ring-2 ring-amber-300" : "bg-black/30"}`}>
+          <div className={`font-extrabold ${isMyTurn ? "text-amber-100 text-xl" : "text-amber-100/80 text-base"}`}>
+            {game.status === "active" ? (isMyTurn ? "نوبت شماست" : "نوبت حریف") : "بازی تمام شد"}
           </div>
         </div>
-        <button onClick={() => setChatOpen((o) => !o)} className="relative p-2 rounded-lg bg-amber-800/40">
-          <MessageCircle size={20} />
-          {chat.length > 0 && <span className="absolute -top-1 -left-1 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{chat.length}</span>}
+        <button
+          onClick={() => { if (!chatEnabled) { toast.error("چت خاموشه"); return; } setChatOpen((o) => !o); }}
+          className="relative p-2 rounded-lg bg-amber-800/40"
+          aria-label="چت"
+        >
+          {chatEnabled ? <MessageCircle size={20} /> : <MessageCircleOff size={20} className="opacity-60" />}
+          {chatEnabled && chat.length > 0 && <span className="absolute -top-1 -left-1 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{chat.length}</span>}
         </button>
       </header>
+
+      {/* Player strips with timers */}
+      <div className="max-w-5xl mx-auto grid grid-cols-2 gap-2 mb-2">
+        <div className={`rounded-lg px-3 py-2 flex items-center justify-between ${!isMyTurn && game.status === "active" ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
+          <span className="text-sm font-bold truncate">{opp?.username ?? "حریف"} <span className="text-amber-200/60 text-xs">({opp?.rating ?? "—"})</span></span>
+          <span className={`font-mono text-lg tabular-nums ${oppTime !== null && oppTime !== undefined && oppTime < 30000 ? "text-red-400" : "text-amber-100"}`}>
+            {game.time_control > 0 ? fmtTime(oppTime) : "∞"}
+          </span>
+        </div>
+        <div className={`rounded-lg px-3 py-2 flex items-center justify-between ${isMyTurn && game.status === "active" ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
+          <span className="text-sm font-bold truncate">شما <span className="text-amber-200/60 text-xs">({me?.rating ?? "—"})</span></span>
+          <span className={`font-mono text-lg tabular-nums ${myTime !== null && myTime !== undefined && myTime < 30000 ? "text-red-400" : "text-amber-100"}`}>
+            {game.time_control > 0 ? fmtTime(myTime) : "∞"}
+          </span>
+        </div>
+      </div>
 
       <div className="flex justify-center">
         <div className="rounded-xl overflow-hidden shadow-2xl border-2" style={{ borderColor: board.dark }}>
@@ -335,14 +464,21 @@ function OnlineGame() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto mt-4 flex justify-center gap-2">
+      <div className="max-w-5xl mx-auto mt-4 flex justify-center gap-2 flex-wrap">
         {game.status === "active" && (
           <Button variant="destructive" onClick={resign}><Flag size={14} /> تسلیم</Button>
         )}
+        <Button
+          variant="secondary"
+          onClick={() => setChatEnabled(!chatEnabled)}
+          title="خاموش/روشن کردن چت"
+        >
+          {chatEnabled ? <><MessageCircleOff size={14} /> خاموش کردن چت</> : <><MessageCircle size={14} /> روشن کردن چت</>}
+        </Button>
       </div>
 
       {/* Chat panel */}
-      {chatOpen && (
+      {chatOpen && chatEnabled && (
         <div className="fixed inset-x-0 bottom-0 top-1/2 bg-stone-950 border-t-2 border-amber-700/60 z-30 flex flex-col">
           <div className="p-3 border-b border-amber-900/40 flex justify-between items-center">
             <span className="font-bold">چت بازی</span>
@@ -386,11 +522,28 @@ function OnlineGame() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!endMsg} onOpenChange={(o) => !o && setEndMsg(null)}>
+      <Dialog open={confirmLeave} onOpenChange={setConfirmLeave}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>پایان بازی</DialogTitle>
-            <DialogDescription>{endMsg}</DialogDescription>
+            <DialogTitle>خروج از بازی</DialogTitle>
+            <DialogDescription>
+              اگر الان از بازی خارج بشی، به منزله تسلیم شدنه و این بازی رو می‌بازی. مطمئنی؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row-reverse gap-2">
+            <Button variant="destructive" onClick={confirmAndLeave}>بله، تسلیم می‌شم</Button>
+            <Button variant="secondary" onClick={() => setConfirmLeave(false)}>ادامه بازی</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!endMsg} onOpenChange={(o) => !o && setEndMsg(null)}>
+        <DialogContent className={`sm:max-w-sm ${endTone === "win" ? "ring-4 ring-amber-400/60" : endTone === "lose" ? "ring-4 ring-red-500/60" : ""}`}>
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">
+              {endTone === "win" ? "🏆 پیروزی!" : endTone === "lose" ? "😔 باخت" : "🤝 مساوی"}
+            </DialogTitle>
+            <DialogDescription className="text-center text-base">{endMsg}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => nav({ to: "/" })} className="w-full">بازگشت به منو</Button>
