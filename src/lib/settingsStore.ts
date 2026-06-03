@@ -33,10 +33,14 @@ interface SettingsState {
   boardThemeIdx: number;
   pieceThemeIdx: number;
   soundEnabled: boolean;
+  chatSoundEnabled: boolean;
+  chatEnabled: boolean;
   aiDifficulty: 1 | 2 | 3;
   setBoardTheme: (i: number) => void;
   setPieceTheme: (i: number) => void;
   setSoundEnabled: (v: boolean) => void;
+  setChatSoundEnabled: (v: boolean) => void;
+  setChatEnabled: (v: boolean) => void;
   setAiDifficulty: (v: 1 | 2 | 3) => void;
 }
 
@@ -46,10 +50,14 @@ export const useSettings = create<SettingsState>()(
       boardThemeIdx: 0,
       pieceThemeIdx: 0,
       soundEnabled: true,
+      chatSoundEnabled: true,
+      chatEnabled: true,
       aiDifficulty: 2,
       setBoardTheme: (i) => set({ boardThemeIdx: i }),
       setPieceTheme: (i) => set({ pieceThemeIdx: i }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
+      setChatSoundEnabled: (v) => set({ chatSoundEnabled: v }),
+      setChatEnabled: (v) => set({ chatEnabled: v }),
       setAiDifficulty: (v) => set({ aiDifficulty: v }),
     }),
     { name: "chess-settings" },
