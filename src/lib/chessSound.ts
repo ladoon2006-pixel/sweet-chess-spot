@@ -1,5 +1,5 @@
 // Real chess sounds (Lichess open-source pack served from /public/sounds).
-// Menu click is synthesised via WebAudio for a clean UI click instead of a piece-move sound.
+// Menu click is a short noise-burst click for a realistic UI tick.
 type SoundKind =
   | "move"
   | "capture"
@@ -49,8 +49,10 @@ export function playSound(kind: SoundKind = "move") {
   }
 }
 
-// ---- Menu click (synthesised) ----
+// ---- Realistic menu click: short filtered noise burst ----
 let audioCtx: AudioContext | null = null;
+let noiseBuffer: AudioBuffer | null = null;
+
 function ctx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!audioCtx) {
@@ -63,23 +65,53 @@ function ctx(): AudioContext | null {
   return audioCtx;
 }
 
+function getNoiseBuffer(ac: AudioContext): AudioBuffer {
+  if (noiseBuffer) return noiseBuffer;
+  const len = Math.floor(ac.sampleRate * 0.05);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  noiseBuffer = buf;
+  return buf;
+}
+
 export function playMenuClick() {
   const ac = ctx();
   if (!ac) return;
   try {
     if (ac.state === "suspended") void ac.resume();
     const now = ac.currentTime;
-    const osc = ac.createOscillator();
+
+    // Noise burst — sounds like a real plastic tap
+    const src = ac.createBufferSource();
+    src.buffer = getNoiseBuffer(ac);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 1800;
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 3200;
+    bp.Q.value = 1.2;
     const gain = ac.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(1100, now);
-    osc.frequency.exponentialRampToValueAtTime(420, now + 0.04);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
-    osc.connect(gain).connect(ac.destination);
+    gain.gain.exponentialRampToValueAtTime(0.55, now + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+    src.connect(hp).connect(bp).connect(gain).connect(ac.destination);
+    src.start(now);
+    src.stop(now + 0.06);
+
+    // Tiny low-frequency thump to give it body
+    const osc = ac.createOscillator();
+    const og = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.04);
+    og.gain.setValueAtTime(0.0001, now);
+    og.gain.exponentialRampToValueAtTime(0.18, now + 0.004);
+    og.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+    osc.connect(og).connect(ac.destination);
     osc.start(now);
-    osc.stop(now + 0.07);
+    osc.stop(now + 0.06);
   } catch {
     /* ignore */
   }

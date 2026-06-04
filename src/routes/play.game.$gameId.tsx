@@ -15,10 +15,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Flag, Send, MessageCircle, MessageCircleOff, Home as HomeIcon } from "lucide-react";
+import { Flag, Send, MessageCircle, MessageCircleOff, Home as HomeIcon, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/play/game/$gameId")({
   component: OnlineGame,
@@ -64,8 +65,9 @@ function OnlineGame() {
   const piecesT = PIECE_THEMES[pieceThemeIdx];
 
   const [game, setGame] = useState<GameRow | null>(null);
-  const [opp, setOpp] = useState<{ id: string; username: string; rating: number } | null>(null);
-  const [me, setMe] = useState<{ id: string; username: string; rating: number } | null>(null);
+  const [opp, setOpp] = useState<{ id: string; username: string; rating: number; avatar_url: string | null } | null>(null);
+  const [me, setMe] = useState<{ id: string; username: string; rating: number; avatar_url: string | null } | null>(null);
+  const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "friends">("none");
   const chessRef = useRef(new Chess());
   const [, force] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
@@ -132,16 +134,36 @@ function OnlineGame() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [gameId, soundEnabled]);
 
-  // load opponent + me profile
+  // load opponent + me profile, plus current friendship status
   useEffect(() => {
     if (!game || !user) return;
     const otherId = game.white_id === user.id ? game.black_id : game.white_id;
-    supabase.from("profiles").select("id,username,rating").in("id", [otherId, user.id]).then(({ data }) => {
+    supabase.from("profiles").select("id,username,rating,avatar_url").in("id", [otherId, user.id]).then(({ data }) => {
       const list = (data ?? []) as any[];
       setOpp(list.find((p) => p.id === otherId) ?? null);
       setMe(list.find((p) => p.id === user.id) ?? null);
     });
+    supabase.from("friendships").select("status,requester_id,addressee_id")
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${user.id})`)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) setFriendStatus("none");
+        else if ((data as any).status === "accepted") setFriendStatus("friends");
+        else setFriendStatus("pending");
+      });
   }, [game?.white_id, game?.black_id, user?.id]);
+
+  const sendFriendRequest = async () => {
+    if (!user || !opp) return;
+    const { error } = await supabase.from("friendships").insert({ requester_id: user.id, addressee_id: opp.id });
+    if (error) {
+      if (error.message.toLowerCase().includes("duplicate")) toast("درخواست قبلاً ارسال شده");
+      else toast.error(error.message);
+      return;
+    }
+    setFriendStatus("pending");
+    toast.success("درخواست دوستی فرستاده شد");
+  };
 
   // Load chat + subscribe
   useEffect(() => {
@@ -171,7 +193,7 @@ function OnlineGame() {
     return () => window.clearInterval(id);
   }, [game?.status, game?.time_control]);
 
-  // Browser unload during active game → mark resign
+  // Browser unload during active game → confirm
   useEffect(() => {
     if (!game || game.status !== "active" || !user) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -182,6 +204,19 @@ function OnlineGame() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [game?.status, user?.id]);
+
+  // Block keyboard / browser back during an active game — push a history entry
+  // and re-push on popstate, opening the "are you sure" dialog instead of leaving.
+  useEffect(() => {
+    if (!game || game.status !== "active") return;
+    window.history.pushState({ guard: true }, "");
+    const onPop = () => {
+      window.history.pushState({ guard: true }, "");
+      setConfirmLeave(true);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [game?.status]);
 
   const showEnd = (g: GameRow) => {
     const meWon = g.winner_id && g.winner_id === user?.id;
@@ -387,38 +422,44 @@ function OnlineGame() {
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-br from-amber-950 via-stone-900 to-stone-950 text-amber-50 p-3 pb-4">
       <header className="max-w-5xl mx-auto flex items-center justify-between mb-2">
-        <button onClick={requestLeave} className="text-sm flex items-center gap-1 wood-panel px-2 py-1 rounded">
-          <HomeIcon size={14} /> خانه
+        <button onClick={requestLeave} className="text-sm flex items-center gap-1 wood-panel px-2 py-1 rounded" aria-label="خانه">
+          <HomeIcon size={16} />
         </button>
-        <div className={`text-center px-3 py-1 rounded-lg ${isMyTurn ? "bg-amber-500/30 ring-2 ring-amber-300" : "bg-black/30"}`}>
-          <div className={`font-extrabold ${isMyTurn ? "text-amber-100 text-xl" : "text-amber-100/80 text-base"}`}>
-            {game.status === "active" ? (isMyTurn ? "نوبت شماست" : "نوبت حریف") : "بازی تمام شد"}
-          </div>
+        <div className="flex items-center gap-2">
+          {opp && friendStatus === "none" && (
+            <button onClick={sendFriendRequest} className="text-xs flex items-center gap-1 wood-panel px-2 py-1 rounded" title="درخواست دوستی">
+              <UserPlus size={14} /> دوستی
+            </button>
+          )}
+          {friendStatus === "pending" && <span className="text-[11px] text-amber-200/80">درخواست ارسال شد</span>}
+          {friendStatus === "friends" && <span className="text-[11px] text-emerald-300 flex items-center gap-1"><Check size={12} /> دوست</span>}
+          <button
+            onClick={() => { if (!chatEnabled) { toast.error("چت خاموشه"); return; } setChatOpen((o) => !o); }}
+            className="relative p-2 rounded-lg bg-amber-800/40"
+            aria-label="چت"
+          >
+            {chatEnabled ? <MessageCircle size={18} /> : <MessageCircleOff size={18} className="opacity-60" />}
+            {chatEnabled && chat.length > 0 && <span className="absolute -top-1 -left-1 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{chat.length}</span>}
+          </button>
         </div>
-        <button
-          onClick={() => { if (!chatEnabled) { toast.error("چت خاموشه"); return; } setChatOpen((o) => !o); }}
-          className="relative p-2 rounded-lg bg-amber-800/40"
-          aria-label="چت"
-        >
-          {chatEnabled ? <MessageCircle size={20} /> : <MessageCircleOff size={20} className="opacity-60" />}
-          {chatEnabled && chat.length > 0 && <span className="absolute -top-1 -left-1 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{chat.length}</span>}
-        </button>
       </header>
 
-      {/* Player strips with timers */}
+      {/* Player strips: avatar + username + remaining time only */}
       <div className="max-w-5xl mx-auto grid grid-cols-2 gap-2 mb-2">
-        <div className={`rounded-lg px-3 py-2 flex items-center justify-between ${!isMyTurn && game.status === "active" ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
-          <span className="text-sm font-bold truncate">{opp?.username ?? "حریف"} <span className="text-amber-200/60 text-xs">({opp?.rating ?? "—"})</span></span>
-          <span className={`font-mono text-lg tabular-nums ${oppTime !== null && oppTime !== undefined && oppTime < 30000 ? "text-red-400" : "text-amber-100"}`}>
-            {game.time_control > 0 ? fmtTime(oppTime) : "∞"}
-          </span>
-        </div>
-        <div className={`rounded-lg px-3 py-2 flex items-center justify-between ${isMyTurn && game.status === "active" ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
-          <span className="text-sm font-bold truncate">شما <span className="text-amber-200/60 text-xs">({me?.rating ?? "—"})</span></span>
-          <span className={`font-mono text-lg tabular-nums ${myTime !== null && myTime !== undefined && myTime < 30000 ? "text-red-400" : "text-amber-100"}`}>
-            {game.time_control > 0 ? fmtTime(myTime) : "∞"}
-          </span>
-        </div>
+        <PlayerStrip
+          name={opp?.username ?? "حریف"}
+          avatarUrl={opp?.avatar_url ?? null}
+          timeMs={oppTime}
+          hasClock={game.time_control > 0}
+          active={!isMyTurn && game.status === "active"}
+        />
+        <PlayerStrip
+          name={me?.username ?? "شما"}
+          avatarUrl={me?.avatar_url ?? null}
+          timeMs={myTime}
+          hasClock={game.time_control > 0}
+          active={isMyTurn && game.status === "active"}
+        />
       </div>
 
       <div className="flex justify-center">
@@ -550,6 +591,31 @@ function OnlineGame() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function PlayerStrip({
+  name, avatarUrl, timeMs, hasClock, active,
+}: { name: string; avatarUrl: string | null; timeMs: number | null | undefined; hasClock: boolean; active: boolean }) {
+  const fmt = (ms: number | null | undefined) => {
+    if (ms === null || ms === undefined) return "∞";
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  };
+  const low = timeMs !== null && timeMs !== undefined && timeMs < 30000;
+  return (
+    <div className={`rounded-lg px-3 py-2 flex items-center gap-3 ${active ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
+      <Avatar className="w-9 h-9 border border-amber-700/60">
+        {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+        <AvatarFallback className="bg-amber-900/60 text-amber-100 text-xs">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <span className="text-sm font-bold truncate flex-1">{name}</span>
+      <span className={`font-mono text-lg tabular-nums ${low ? "text-red-400" : "text-amber-100"}`}>
+        {hasClock ? fmt(timeMs) : "∞"}
+      </span>
     </div>
   );
 }

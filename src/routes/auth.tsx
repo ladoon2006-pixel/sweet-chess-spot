@@ -11,16 +11,17 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "ورود — Chess Master" }] }),
+  head: () => ({ meta: [{ title: "ورود — Sweet Chess" }] }),
 });
+
+type Mode = "signin" | "signup" | "forgot";
 
 function AuthPage() {
   const nav = useNavigate();
   const { user } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,8 +39,11 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) {
-      if (error.message.toLowerCase().includes("not confirmed") || error.message.toLowerCase().includes("confirm")) {
+      const m = error.message.toLowerCase();
+      if (m.includes("not confirmed") || m.includes("confirm")) {
         toast.error("ایمیلت رو هنوز تأیید نکردی. به تب «ثبت‌نام» برو و کد رو وارد کن.");
+      } else if (m.includes("invalid login") || m.includes("invalid credentials")) {
+        toast.error("ایمیل یا رمز عبور اشتباهه");
       } else {
         toast.error(error.message);
       }
@@ -49,8 +53,8 @@ function AuthPage() {
   };
 
   const handleSendOtp = async () => {
-    if (!email || !password || !username) {
-      toast.error("همه فیلدها را پر کنید");
+    if (!email || !password) {
+      toast.error("ایمیل و رمز عبور را وارد کنید");
       return;
     }
     if (password.length < 6) {
@@ -58,21 +62,30 @@ function AuthPage() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { username },
-        emailRedirectTo: window.location.origin,
-      },
+      options: { emailRedirectTo: window.location.origin },
     });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
-    } else {
-      setOtpSent(true);
-      toast.success("کد تأیید ۶ رقمی به ایمیلت ارسال شد (پوشه اسپم رو هم چک کن)");
+      const m = error.message.toLowerCase();
+      if (m.includes("already") || m.includes("registered") || m.includes("exists")) {
+        toast.error("این ایمیل قبلاً ثبت شده. از تب «ورود» وارد شو یا رمزت رو بازیابی کن.");
+        setMode("signin");
+      } else {
+        toast.error(error.message);
+      }
+      return;
     }
+    // Supabase returns identities=[] when the email exists already
+    if (data?.user && Array.isArray((data.user as any).identities) && (data.user as any).identities.length === 0) {
+      toast.error("این ایمیل قبلاً ثبت شده. از تب «ورود» وارد شو یا رمزت رو بازیابی کن.");
+      setMode("signin");
+      return;
+    }
+    setOtpSent(true);
+    toast.success("کد تأیید ۶ رقمی به ایمیلت ارسال شد (پوشه اسپم رو هم چک کن)");
   };
 
   const handleResend = async () => {
@@ -90,14 +103,21 @@ function AuthPage() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: "signup",
-    });
+    const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: "signup" });
     setBusy(false);
     if (error) toast.error(error.message);
     else toast.success("حساب فعال شد!");
+  };
+
+  const handleForgot = async () => {
+    if (!email) { toast.error("ایمیلت رو وارد کن"); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("لینک بازیابی رمز به ایمیلت ارسال شد");
   };
 
   return (
@@ -106,7 +126,6 @@ function AuthPage() {
       <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-amber-500/20 blur-3xl -z-10" />
       <div className="pointer-events-none absolute bottom-10 left-10 w-72 h-72 rounded-full bg-yellow-400/20 blur-3xl -z-10" />
 
-      {/* Chess board backdrop */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center opacity-30">
         <div className="grid grid-cols-8 mt-2" style={{ width: "min(96vw, 460px)" }}>
           {Array.from({ length: 64 }).map((_, k) => {
@@ -119,26 +138,21 @@ function AuthPage() {
 
       <Link to="/" className="absolute top-4 right-4 text-sm text-amber-100/80">← خانه</Link>
 
-      {/* Chess graphic */}
       <div className="relative flex flex-col items-center mb-6 mt-2">
         <div className="relative">
           <Crown className="text-amber-300 drop-shadow-[0_0_18px_rgba(255,200,80,0.9)]" size={56} />
-          <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-5xl drop-shadow-[0_0_10px_rgba(255,200,80,0.8)]" style={{ color: "#f5c66b" }}>♞</span>
-        </div>
-        <div className="mt-12 flex gap-1 text-3xl" style={{ color: "#f5c66b", textShadow: "0 0 8px rgba(255,200,80,0.5)" }}>
-          <span>♜</span><span>♝</span><span>♛</span><span>♚</span><span>♝</span><span>♜</span>
         </div>
         <h1 className="text-2xl font-extrabold wood-text mt-3" style={{ fontFamily: "serif" }}>
           Sweet Chess
         </h1>
-        <p className="text-xs text-amber-100/70 mt-1">برای ورود به بازی، ایمیلت رو تأیید کن</p>
       </div>
 
       <div className="w-full max-w-sm wood-panel rounded-2xl p-5 space-y-4">
-        <Tabs value={mode} onValueChange={(v) => { setMode(v as any); setOtpSent(false); }}>
-          <TabsList className="grid grid-cols-2 w-full bg-black/40">
+        <Tabs value={mode} onValueChange={(v) => { setMode(v as Mode); setOtpSent(false); }}>
+          <TabsList className="grid grid-cols-3 w-full bg-black/40">
             <TabsTrigger value="signin">ورود</TabsTrigger>
             <TabsTrigger value="signup">ثبت‌نام</TabsTrigger>
+            <TabsTrigger value="forgot">فراموشی</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="space-y-3 mt-4">
@@ -155,16 +169,14 @@ function AuthPage() {
             <Button onClick={handleSignIn} disabled={busy} className="w-full">
               <Mail size={16} /> ورود با ایمیل
             </Button>
+            <button onClick={() => setMode("forgot")} className="text-xs text-amber-200/80 underline w-full text-center">
+              رمز عبورت رو فراموش کردی؟
+            </button>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-3 mt-4">
             {!otpSent ? (
               <>
-                <div className="space-y-1">
-                  <Label className="text-amber-100">نام کاربری</Label>
-                  <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="نام نمایشی"
-                    className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
-                </div>
                 <div className="space-y-1">
                   <Label className="text-amber-100">ایمیل</Label>
                   <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com"
@@ -179,13 +191,13 @@ function AuthPage() {
                   ارسال کد تأیید
                 </Button>
                 <p className="text-[11px] text-amber-100/70 text-center">
-                  یک کد ۶ رقمی به ایمیلت ارسال می‌شه. تا وقتی کد رو وارد نکنی، حساب فعال نمی‌شه و وارد بازی نمی‌شی.
+                  یه کد ۶ رقمی به ایمیلت ارسال می‌شه. نام کاربری به‌صورت خودکار ساخته می‌شه و بعداً از پروفایل می‌تونی عوضش کنی.
                 </p>
               </>
             ) : (
               <>
                 <p className="text-sm text-amber-100/80 text-center">
-                  کد ۶ رقمی ارسال شده به <b dir="ltr">{email}</b> را وارد کن:
+                  کد ۶ رقمی ارسال‌شده به <b dir="ltr">{email}</b> را وارد کن:
                 </p>
                 <Input
                   inputMode="numeric"
@@ -199,21 +211,23 @@ function AuthPage() {
                   تأیید و ورود
                 </Button>
                 <div className="flex justify-between items-center text-xs">
-                  <button onClick={handleResend} disabled={busy} className="text-amber-200/80 underline">
-                    ارسال مجدد کد
-                  </button>
-                  <button
-                    onClick={() => { setOtpSent(false); setOtp(""); }}
-                    className="text-amber-200/70 underline"
-                  >
-                    تغییر ایمیل
-                  </button>
+                  <button onClick={handleResend} disabled={busy} className="text-amber-200/80 underline">ارسال مجدد کد</button>
+                  <button onClick={() => { setOtpSent(false); setOtp(""); }} className="text-amber-200/70 underline">تغییر ایمیل</button>
                 </div>
-                <p className="text-[11px] text-amber-100/60 text-center">
-                  کد رو دریافت نکردی؟ پوشهٔ Spam یا Junk ایمیلت رو هم چک کن.
-                </p>
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="forgot" className="space-y-3 mt-4">
+            <div className="space-y-1">
+              <Label className="text-amber-100">ایمیل ثبت‌شده</Label>
+              <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com"
+                className="bg-amber-50 text-stone-900 placeholder:text-stone-500 border-amber-700/60" />
+            </div>
+            <Button onClick={handleForgot} disabled={busy} className="w-full">ارسال لینک بازیابی</Button>
+            <p className="text-[11px] text-amber-100/70 text-center">
+              لینک بازیابی به ایمیلت ارسال می‌شه. روی اون کلیک کن و رمز جدید بذار.
+            </p>
           </TabsContent>
         </Tabs>
       </div>
