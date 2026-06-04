@@ -193,7 +193,7 @@ function OnlineGame() {
     return () => window.clearInterval(id);
   }, [game?.status, game?.time_control]);
 
-  // Browser unload during active game → mark resign
+  // Browser unload during active game → confirm
   useEffect(() => {
     if (!game || game.status !== "active" || !user) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -204,6 +204,19 @@ function OnlineGame() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [game?.status, user?.id]);
+
+  // Block keyboard / browser back during an active game — push a history entry
+  // and re-push on popstate, opening the "are you sure" dialog instead of leaving.
+  useEffect(() => {
+    if (!game || game.status !== "active") return;
+    window.history.pushState({ guard: true }, "");
+    const onPop = () => {
+      window.history.pushState({ guard: true }, "");
+      setConfirmLeave(true);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [game?.status]);
 
   const showEnd = (g: GameRow) => {
     const meWon = g.winner_id && g.winner_id === user?.id;
