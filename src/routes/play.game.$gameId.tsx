@@ -65,8 +65,9 @@ function OnlineGame() {
   const piecesT = PIECE_THEMES[pieceThemeIdx];
 
   const [game, setGame] = useState<GameRow | null>(null);
-  const [opp, setOpp] = useState<{ id: string; username: string; rating: number } | null>(null);
-  const [me, setMe] = useState<{ id: string; username: string; rating: number } | null>(null);
+  const [opp, setOpp] = useState<{ id: string; username: string; rating: number; avatar_url: string | null } | null>(null);
+  const [me, setMe] = useState<{ id: string; username: string; rating: number; avatar_url: string | null } | null>(null);
+  const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "friends">("none");
   const chessRef = useRef(new Chess());
   const [, force] = useState(0);
   const [selected, setSelected] = useState<Square | null>(null);
@@ -133,16 +134,36 @@ function OnlineGame() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [gameId, soundEnabled]);
 
-  // load opponent + me profile
+  // load opponent + me profile, plus current friendship status
   useEffect(() => {
     if (!game || !user) return;
     const otherId = game.white_id === user.id ? game.black_id : game.white_id;
-    supabase.from("profiles").select("id,username,rating").in("id", [otherId, user.id]).then(({ data }) => {
+    supabase.from("profiles").select("id,username,rating,avatar_url").in("id", [otherId, user.id]).then(({ data }) => {
       const list = (data ?? []) as any[];
       setOpp(list.find((p) => p.id === otherId) ?? null);
       setMe(list.find((p) => p.id === user.id) ?? null);
     });
+    supabase.from("friendships").select("status,requester_id,addressee_id")
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${user.id})`)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) setFriendStatus("none");
+        else if ((data as any).status === "accepted") setFriendStatus("friends");
+        else setFriendStatus("pending");
+      });
   }, [game?.white_id, game?.black_id, user?.id]);
+
+  const sendFriendRequest = async () => {
+    if (!user || !opp) return;
+    const { error } = await supabase.from("friendships").insert({ requester_id: user.id, addressee_id: opp.id });
+    if (error) {
+      if (error.message.toLowerCase().includes("duplicate")) toast("درخواست قبلاً ارسال شده");
+      else toast.error(error.message);
+      return;
+    }
+    setFriendStatus("pending");
+    toast.success("درخواست دوستی فرستاده شد");
+  };
 
   // Load chat + subscribe
   useEffect(() => {
