@@ -594,3 +594,28 @@ function OnlineGame() {
     </div>
   );
 }
+
+function PlayerStrip({
+  name, avatarUrl, timeMs, hasClock, active,
+}: { name: string; avatarUrl: string | null; timeMs: number | null | undefined; hasClock: boolean; active: boolean }) {
+  const fmt = (ms: number | null | undefined) => {
+    if (ms === null || ms === undefined) return "∞";
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  };
+  const low = timeMs !== null && timeMs !== undefined && timeMs < 30000;
+  return (
+    <div className={`rounded-lg px-3 py-2 flex items-center gap-3 ${active ? "bg-amber-600/30 ring-1 ring-amber-300/60" : "bg-black/30"}`}>
+      <Avatar className="w-9 h-9 border border-amber-700/60">
+        {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+        <AvatarFallback className="bg-amber-900/60 text-amber-100 text-xs">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <span className="text-sm font-bold truncate flex-1">{name}</span>
+      <span className={`font-mono text-lg tabular-nums ${low ? "text-red-400" : "text-amber-100"}`}>
+        {hasClock ? fmt(timeMs) : "∞"}
+      </span>
+    </div>
+  );
+}
