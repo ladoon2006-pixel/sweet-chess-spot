@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as FriendsRouteImport } from './routes/friends'
@@ -35,6 +36,11 @@ const ShopRoute = ShopRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/friends': typeof FriendsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/friends': typeof FriendsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/friends': typeof FriendsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/shop': typeof ShopRoute
   '/terms': typeof TermsRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/shop'
     | '/terms'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/shop'
     | '/terms'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/shop'
     | '/terms'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   FriendsRoute: typeof FriendsRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   ShopRoute: typeof ShopRoute
   TermsRoute: typeof TermsRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   FriendsRoute: FriendsRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   ShopRoute: ShopRoute,
   TermsRoute: TermsRoute,

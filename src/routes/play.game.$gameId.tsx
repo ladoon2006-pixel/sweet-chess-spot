@@ -15,10 +15,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Flag, Send, MessageCircle, MessageCircleOff, Home as HomeIcon } from "lucide-react";
+import { Flag, Send, MessageCircle, MessageCircleOff, Home as HomeIcon, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/play/game/$gameId")({
   component: OnlineGame,
