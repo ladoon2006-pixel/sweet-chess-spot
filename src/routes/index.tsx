@@ -2,17 +2,17 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-
-import { Bot, Crown, Globe, LogIn, LogOut, Sparkles, Users, Lock } from "lucide-react";
+import { Bot, Globe, LogIn, LogOut, Users } from "lucide-react";
 import { toast } from "sonner";
 import { playMenuClick } from "@/lib/chessSound";
+import logoAsset from "@/assets/sweet-chess-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
       { title: "Sweet Chess — شطرنج آنلاین" },
-      { name: "description", content: "بازی شطرنج آنلاین، با دوست یا هوش مصنوعی، با چت زنده و سیستم دوستی." },
+      { name: "description", content: "شطرنج آنلاین، با دوست یا هوش مصنوعی." },
     ],
   }),
 });
@@ -23,7 +23,7 @@ function Home() {
 
   const requireAuth = (to: string) => {
     if (!user) {
-      toast.error("ابتدا وارد حساب کاربری شو و ایمیلت رو تأیید کن");
+      toast.error("ابتدا وارد حساب کاربری شو");
       nav({ to: "/auth" });
       return;
     }
@@ -31,51 +31,37 @@ function Home() {
   };
 
   return (
-    <div
-      dir="rtl"
-      className="relative min-h-screen w-full flex flex-col items-center overflow-hidden"
-    >
+    <div dir="rtl" className="relative min-h-screen w-full flex flex-col items-center overflow-hidden">
       <div className="wood-bg absolute inset-0 -z-10" />
 
       <div className="pt-10 sm:pt-12 flex flex-col items-center px-6 text-center">
-        <div className="brand-emblem neon-pulse" aria-hidden="true">
-          <Crown size={48} strokeWidth={1.6} />
-          <span className="brand-emblem__piece">♞</span>
-        </div>
-        <div className="mt-5 flex items-center gap-2 text-amber-200/85 text-xs sm:text-sm font-bold tracking-[0.32em]">
-          <Sparkles size={14} /> SWEET CHESS
-        </div>
+        <img
+          src={logoAsset.url}
+          alt="Sweet Chess"
+          className="w-44 h-44 sm:w-52 sm:h-52 object-contain drop-shadow-[0_0_30px_rgba(255,200,80,0.55)]"
+          draggable={false}
+        />
         <h1 className="mt-3 wood-text text-3xl sm:text-4xl font-black leading-tight">قلمرو شطرنج آنلاین</h1>
-        <p className="mt-2 max-w-xs text-sm leading-7 text-amber-100/70">
-          بازی سریع، چت زنده و رقابت دوستانه با حال‌وهوای طلایی لوگو
-        </p>
       </div>
 
-      {!loading && !user && (
-        <div className="mt-6 mx-6 wood-panel rounded-xl px-4 py-3 flex items-center gap-2 text-amber-100 text-sm max-w-sm">
-          <Lock size={18} />
-          <span>برای دیدن و شروع بازی‌ها، اول وارد حسابت شو.</span>
-        </div>
-      )}
-
-      <div className="mt-6 w-full max-w-sm px-6 flex flex-col gap-4">
-        {user ? (
+      <div className="mt-8 w-full max-w-sm px-6 flex flex-col gap-4">
+        {!loading && user ? (
           <>
             <MenuButton onClick={() => requireAuth("/play/online")} icon={<Globe size={22} />} label="بازی آنلاین" />
             <MenuButton to="/play/friend" icon={<Users size={22} />} label="بازی با دوست" />
             <MenuButton to="/play/ai" icon={<Bot size={22} />} label="بازی با هوش مصنوعی" />
           </>
-        ) : (
+        ) : !loading ? (
           <Button onClick={() => { playMenuClick(); nav({ to: "/auth" }); }} size="lg" className="w-full text-lg">
-            <LogIn size={18} /> ورود / ثبت‌نام با ایمیل
+            <LogIn size={18} /> ورود با ایمیل
           </Button>
-        )}
+        ) : null}
       </div>
 
       {user && (
         <div className="mt-6 flex flex-col items-center gap-3">
           <div className="text-xs text-amber-100/80 flex items-center gap-3">
-            <span>وارد شده: <b>{user.user_metadata?.username ?? user.email}</b></span>
+            <span>{user.user_metadata?.username ?? user.email}</span>
             <button onClick={() => { playMenuClick(); signOut(); }} className="underline inline-flex items-center gap-1">
               <LogOut size={12} /> خروج
             </button>
