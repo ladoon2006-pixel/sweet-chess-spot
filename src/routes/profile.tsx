@@ -15,6 +15,7 @@ export const Route = createFileRoute("/profile")({
 interface Profile {
   id: string;
   username: string;
+  display_name: string | null;
   rating: number;
   wins: number;
   losses: number;
@@ -30,20 +31,21 @@ function ProfilePage() {
   const { user, loading, signOut } = useAuth();
   const nav = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth" });
+    if (!loading && !user) nav({ to: "/" });
   }, [user, loading, nav]);
 
   const loadProfile = async () => {
     if (!user) return;
     const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
     if (data) {
-      setProfile(data as Profile);
-      setName((data as Profile).username);
+      const p = data as Profile;
+      setProfile(p);
+      setDisplayName(p.display_name ?? p.username);
     }
   };
 
@@ -53,11 +55,12 @@ function ProfilePage() {
   }, [user?.id]);
 
   const save = async () => {
-    if (!user || !name.trim()) return;
-    const { error } = await supabase.from("profiles").update({ username: name.trim() }).eq("id", user.id);
+    if (!user || !displayName.trim()) return;
+    const { error } = await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", user.id);
     if (error) toast.error(error.message);
-    else toast.success("ذخیره شد");
+    else { toast.success("ذخیره شد"); loadProfile(); }
   };
+
 
   const uploadAvatar = async (file: File) => {
     if (!user) return;
@@ -162,7 +165,8 @@ function ProfilePage() {
                 onChange={(e) => e.target.files?.[0] && uploadAvatar(e.target.files[0])}
               />
             </div>
-            <div className="mt-3 text-lg font-bold wood-text">{profile.username}</div>
+            <div className="mt-3 text-lg font-bold wood-text">{profile.display_name ?? profile.username}</div>
+            <div className="mt-1 text-xs text-amber-100/60 font-mono" dir="ltr">@{profile.username}</div>
             <div className="mt-1 text-amber-200/80 flex items-center justify-center gap-1 text-sm">
               <Trophy size={14} /> امتیاز: {profile.rating}
             </div>
@@ -176,14 +180,17 @@ function ProfilePage() {
           </div>
 
           <div className="wood-panel rounded-2xl p-4 space-y-2">
-            <label className="text-sm text-amber-100/80">نام کاربری</label>
+            <label className="text-sm text-amber-100/80">نام نمایشی</label>
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={32}
               className="w-full bg-black/30 rounded-lg px-3 py-2 text-amber-50 border border-amber-900/60"
             />
+            <div className="text-[11px] text-amber-100/60">شناسه کاربری <span dir="ltr" className="font-mono">@{profile.username}</span> ثابته و قابل تغییر نیست.</div>
             <Button onClick={save} className="w-full">ذخیره</Button>
           </div>
+
 
           <Link to="/shop" className="block wood-panel rounded-2xl p-4 text-center">
             <div className="font-bold wood-text">بازی‌های باقی‌مانده: {profile.paid_games_remaining}</div>
