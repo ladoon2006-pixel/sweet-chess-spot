@@ -331,7 +331,7 @@
   .royal-nav {
     background: linear-gradient(180deg, rgba(20,10,4,0.95) 0%, rgba(10,6,3,0.98) 100%);
     border-top: 1px solid rgba(255,200,80,0.55);
-    box-shadow: 0 -8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,140,0.2);
+    animation: royal-nav-pulse 2.8s ease-in-out infinite;
   }
-  .royal-nav-active { color: #ffe39a; text-shadow: 0 0 10px rgba(255,200,60,0.7); }
+  .royal-nav-active { color: #ffe39a; animation: royal-nav-active-pulse 2s ease-in-out infinite; }
 }
