@@ -549,15 +549,24 @@ function OnlineGame() {
             <span className="font-bold">چت بازی</span>
             <button onClick={() => setChatOpen(false)}>✕</button>
           </div>
+          <div className="px-3 py-1.5 text-[11px] text-amber-200/70 bg-amber-900/20 border-b border-amber-900/40 text-center">
+            برای گزارش یک پیام، روی همان پیام لمس کنید
+          </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {chat.map((m) => {
               const mine = m.sender_id === user?.id;
+              const bubble = (
+                <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
+                  {m.content}
+                </div>
+              );
               return (
                 <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
-                  {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
-                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
-                    {m.content}
-                  </div>
+                  {mine ? bubble : (
+                    <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id}>
+                      {bubble}
+                    </ReportButton>
+                  )}
                 </div>
               );
             })}
