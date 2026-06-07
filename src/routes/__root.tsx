@@ -6,10 +6,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 import ChallengeListener from "@/components/ChallengeListener";
 import { playMenuClick } from "@/lib/chessSound";
@@ -127,10 +128,26 @@ function RootComponent() {
       <AuthProvider>
         <ChallengeListener />
         <MenuClickSounds />
+        <GlobalLoadingOverlay />
         <Outlet />
         <Toaster richColors position="top-center" />
       </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function GlobalLoadingOverlay() {
+  const isRouterLoading = useRouterState({ select: (s) => s.status === "pending" });
+  const { loading: authLoading } = useAuth();
+  if (!isRouterLoading && !authLoading) return null;
+  return (
+    <div className="royal-loader-wrap" dir="rtl">
+      <div className="flex flex-col items-center">
+        <div className="royal-loader-ring" />
+        <div className="royal-loader-text">SWEET CHESS</div>
+        <div className="mt-2 text-amber-200/70 text-sm">در حال بارگذاری…</div>
+      </div>
+    </div>
   );
 }
 
