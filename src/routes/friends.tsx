@@ -255,7 +255,6 @@ function FriendsPage() {
                 <div key={f.id} className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2">
                   <div className="text-sm"><b>{f.other?.username}</b> <span className="text-amber-200/70 text-xs">({f.other?.rating})</span></div>
                   <div className="flex gap-1 items-center">
-                    {f.other && <ReportButton reportedUserId={f.other.id} type="profile" />}
                     <Button size="sm" variant="secondary" title="دعوت به بازی"
                       onClick={() => f.other && setChallenge({ id: f.other.id, username: f.other.username })}>
                       <Swords size={14} />
@@ -263,7 +262,10 @@ function FriendsPage() {
                     <Button size="sm" onClick={() => f.other && openChat(f.other.id)}>
                       <MessageCircle size={14} />
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => removeFriend(f.id)}><X size={14} /></Button>
+                    <Button size="sm" variant="destructive"
+                      onClick={() => f.other && setConfirmRemove({ id: f.id, username: f.other.username })}>
+                      <X size={14} />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -291,15 +293,24 @@ function FriendsPage() {
                 <div className="wood-panel rounded-2xl px-3 py-2 mb-2 text-sm font-bold wood-text">
                   چت با {activeFriend?.username ?? "…"}
                 </div>
+                <div className="text-[11px] text-amber-200/70 text-center mb-1">
+                  برای گزارش یک پیام، روی همان پیام لمس کنید
+                </div>
                 <div className="flex-1 overflow-y-auto space-y-2 py-2">
                   {msgs.map((m) => {
                     const mine = m.sender_id === user?.id;
+                    const bubble = (
+                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
+                        {m.content}
+                      </div>
+                    );
                     return (
                       <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
-                        {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
-                        <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
-                          {m.content}
-                        </div>
+                        {mine ? bubble : (
+                          <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id}>
+                            {bubble}
+                          </ReportButton>
+                        )}
                       </div>
                     );
                   })}
