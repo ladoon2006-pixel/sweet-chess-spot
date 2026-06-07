@@ -66,6 +66,16 @@ function SettingsPage() {
               onCheckedChange={(v) => s.setChatEnabled(v)}
             />
           </div>
+          <div className="flex items-center justify-between border-t pt-4">
+            <div>
+              <h2 className="font-semibold">صفحه شطرنج سه‌بعدی</h2>
+              <p className="text-sm text-muted-foreground">صفحه و مهره‌ها با حالت سه‌بعدی نمایش داده می‌شن</p>
+            </div>
+            <Switch
+              checked={s.board3D}
+              onCheckedChange={(v) => s.setBoard3D(v)}
+            />
+          </div>
         </section>
 
         {/* Board themes */}
