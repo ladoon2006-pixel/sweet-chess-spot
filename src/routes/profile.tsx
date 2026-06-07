@@ -105,6 +105,20 @@ function ProfilePage() {
         <span className="w-12" />
       </header>
 
+      {!profile && (
+        <div className="max-w-md mx-auto space-y-4 pb-28 animate-pulse">
+          <div className="wood-panel rounded-2xl p-6 flex flex-col items-center gap-3">
+            <div className="w-24 h-24 rounded-full bg-amber-900/40" />
+            <div className="h-4 w-32 rounded bg-amber-900/40" />
+            <div className="h-3 w-24 rounded bg-amber-900/30" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[0,1,2].map(i => <div key={i} className="wood-panel rounded-xl h-16" />)}
+          </div>
+          <div className="wood-panel rounded-2xl h-32" />
+        </div>
+      )}
+
       {profile && (
         <main className="max-w-md mx-auto space-y-4 pb-28">
           {/* Ban / warning banner */}

@@ -12,7 +12,7 @@ import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight, Swords } f
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 
 const search = z.object({ with: z.string().optional(), tab: z.string().optional() });
@@ -345,6 +345,25 @@ function FriendsPage() {
               </Button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>حذف دوست</DialogTitle>
+            <DialogDescription>
+              مطمئنی می‌خوای {confirmRemove?.username} رو از لیست دوستان حذف کنی؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row-reverse gap-2">
+            <Button variant="destructive" onClick={() => confirmRemove && removeFriend(confirmRemove.id)}>
+              بله، حذف کن
+            </Button>
+            <Button variant="secondary" onClick={() => setConfirmRemove(null)}>
+              انصراف
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
