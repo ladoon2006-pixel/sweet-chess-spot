@@ -334,4 +334,89 @@
     animation: royal-nav-pulse 2.8s ease-in-out infinite;
   }
   .royal-nav-active { color: #ffe39a; animation: royal-nav-active-pulse 2s ease-in-out infinite; }
+
+  /* ====== Floating blurred chess pieces (home depth layer) ====== */
+  .royal-bg-pieces { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .royal-bg-pieces span {
+    position: absolute;
+    font-family: "Segoe UI Symbol","Apple Color Emoji","Noto Sans Symbols2", serif;
+    color: transparent;
+    background: linear-gradient(180deg, #fff2b3 0%, #f7c14a 50%, #8a4d12 100%);
+    -webkit-background-clip: text; background-clip: text;
+    filter: blur(2.5px) drop-shadow(0 0 18px rgba(255,180,40,0.35));
+    opacity: 0.35;
+    animation: floaty 14s ease-in-out infinite;
+  }
+  @keyframes floaty {
+    0%,100% { transform: translateY(0) rotate(-4deg); }
+    50%     { transform: translateY(-22px) rotate(4deg); }
+  }
+
+  /* ====== Loading screen (royal) ====== */
+  .royal-loader-wrap {
+    position: fixed; inset: 0; z-index: 100;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(ellipse at center, rgba(120,70,10,0.55) 0%, transparent 60%),
+      linear-gradient(180deg, #0a0603 0%, #18100a 60%, #0a0603 100%);
+  }
+  .royal-loader-ring {
+    width: 84px; height: 84px; border-radius: 999px;
+    border: 3px solid rgba(255,200,80,0.25);
+    border-top-color: #ffd86a;
+    animation: spin 0.9s linear infinite;
+    box-shadow: 0 0 40px rgba(255,180,40,0.55), inset 0 0 18px rgba(255,180,40,0.25);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .royal-loader-text {
+    margin-top: 18px; color: #ffd86a; font-weight: 800; letter-spacing: 0.25em;
+    text-shadow: 0 0 10px rgba(255,180,40,0.7);
+  }
+
+  /* ====== 3D board ====== */
+  .board-3d-wrap { perspective: 1100px; }
+  .board-3d {
+    transform: rotateX(22deg);
+    transform-origin: center 60%;
+    box-shadow:
+      0 25px 50px rgba(0,0,0,0.65),
+      0 12px 28px rgba(0,0,0,0.55);
+  }
+  .board-3d .chess-piece {
+    text-shadow:
+      0 1px 0 rgba(0,0,0,0.6),
+      0 4px 6px rgba(0,0,0,0.55),
+      0 8px 12px rgba(0,0,0,0.35) !important;
+    transform: translateZ(8px);
+  }
+
+  /* ====== Win / Lose effects ====== */
+  @keyframes burst-rise {
+    0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+    20%  { opacity: 1; }
+    100% { transform: translateY(-180px) scale(1.1); opacity: 0; }
+  }
+  .win-burst {
+    position: fixed; inset: 0; pointer-events: none; z-index: 80; overflow: hidden;
+  }
+  .win-burst i {
+    position: absolute; bottom: 20%; width: 10px; height: 14px; border-radius: 2px;
+    background: linear-gradient(180deg, #fff2b3, #f7c14a 50%, #b07423);
+    box-shadow: 0 0 10px rgba(255,200,80,0.85);
+    animation: burst-rise 1.6s ease-out forwards;
+  }
+  @keyframes lose-shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  .lose-flash {
+    position: fixed; inset: 0; pointer-events: none; z-index: 80;
+    background: radial-gradient(circle at center, rgba(200,40,40,0.35), transparent 70%);
+    animation: lose-shake 0.6s ease-out, fadeout 1.6s ease-out forwards;
+  }
+  @keyframes fadeout { to { opacity: 0; } }
 }
+

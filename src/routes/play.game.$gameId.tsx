@@ -60,7 +60,7 @@ function OnlineGame() {
   const { gameId } = useParams({ from: "/play/game/$gameId" });
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const { boardThemeIdx, pieceThemeIdx, soundEnabled, chatSoundEnabled, chatEnabled, setChatEnabled } = useSettings();
+  const { boardThemeIdx, pieceThemeIdx, soundEnabled, chatSoundEnabled, chatEnabled, setChatEnabled, board3D } = useSettings();
   const board = BOARD_THEMES[boardThemeIdx];
   const piecesT = PIECE_THEMES[pieceThemeIdx];
 
@@ -274,7 +274,9 @@ function OnlineGame() {
       status,
       winner_id,
     };
-    if (game.time_control > 0 && game.last_move_at) {
+    // Timer accounting — but ONLY deduct time after the first real move (pgn was not empty before this move).
+    const hadPriorMoves = (game.pgn ?? "").trim().length > 0;
+    if (game.time_control > 0 && game.last_move_at && hadPriorMoves) {
       const elapsed = Date.now() - new Date(game.last_move_at).getTime();
       const myKey = myColor === "w" ? "white_time_left_ms" : "black_time_left_ms";
       const remaining = Math.max(0, (game[myKey] ?? game.time_control * 60_000) - elapsed);
@@ -285,6 +287,7 @@ function OnlineGame() {
         update.winner_id = myColor === "w" ? game.black_id : game.white_id;
       }
     } else if (game.time_control > 0) {
+      // First move (or no last_move_at) — just stamp it, no deduction.
       update.last_move_at = new Date().toISOString();
     }
 
@@ -363,6 +366,12 @@ function OnlineGame() {
       nav({ to: "/" });
       return;
     }
+    // If no moves have been played yet, leaving does NOT count as resign.
+    const noMovesYet = (game.pgn ?? "").trim().length === 0;
+    if (noMovesYet) {
+      nav({ to: "/" });
+      return;
+    }
     setConfirmLeave(true);
   };
 
@@ -385,10 +394,11 @@ function OnlineGame() {
 
   if (!game) return <div className="min-h-screen flex items-center justify-center text-amber-50">در حال بارگذاری…</div>;
 
-  // Compute live remaining time for the active player
+  // Compute live remaining time — but freeze clocks until the first real move
+  const movesPlayed = (game.pgn ?? "").trim().length > 0;
   let liveWhite = game.white_time_left_ms;
   let liveBlack = game.black_time_left_ms;
-  if (game.status === "active" && game.time_control > 0 && game.last_move_at) {
+  if (game.status === "active" && game.time_control > 0 && game.last_move_at && movesPlayed) {
     const elapsed = Date.now() - new Date(game.last_move_at).getTime();
     if (game.turn === "w" && liveWhite !== null && liveWhite !== undefined) {
       liveWhite = Math.max(0, liveWhite - elapsed);
@@ -462,8 +472,8 @@ function OnlineGame() {
         />
       </div>
 
-      <div className="flex justify-center">
-        <div className="rounded-xl overflow-hidden shadow-2xl border-2" style={{ borderColor: board.dark }}>
+      <div className={`flex justify-center ${board3D ? "board-3d-wrap" : ""}`}>
+        <div className={`rounded-xl overflow-hidden shadow-2xl border-2 ${board3D ? "board-3d" : ""}`} style={{ borderColor: board.dark }}>
           <div
             className="grid"
             style={{
@@ -505,6 +515,20 @@ function OnlineGame() {
         </div>
       </div>
 
+      {/* Win / lose visual effects */}
+      {endTone === "win" && (
+        <div className="win-burst" aria-hidden="true">
+          {Array.from({ length: 28 }).map((_, i) => (
+            <i key={i} style={{
+              left: `${(i * 3.5) % 100}%`,
+              animationDelay: `${(i % 7) * 0.08}s`,
+              animationDuration: `${1.3 + (i % 5) * 0.15}s`,
+            }} />
+          ))}
+        </div>
+      )}
+      {endTone === "lose" && <div className="lose-flash" aria-hidden="true" />}
+
       <div className="max-w-5xl mx-auto mt-4 flex justify-center gap-2 flex-wrap">
         {game.status === "active" && (
           <Button variant="destructive" onClick={resign}><Flag size={14} /> تسلیم</Button>
@@ -525,15 +549,24 @@ function OnlineGame() {
             <span className="font-bold">چت بازی</span>
             <button onClick={() => setChatOpen(false)}>✕</button>
           </div>
+          <div className="px-3 py-1.5 text-[11px] text-amber-200/70 bg-amber-900/20 border-b border-amber-900/40 text-center">
+            برای گزارش یک پیام، روی همان پیام لمس کنید
+          </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {chat.map((m) => {
               const mine = m.sender_id === user?.id;
+              const bubble = (
+                <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
+                  {m.content}
+                </div>
+              );
               return (
                 <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
-                  {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
-                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
-                    {m.content}
-                  </div>
+                  {mine ? bubble : (
+                    <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id}>
+                      {bubble}
+                    </ReportButton>
+                  )}
                 </div>
               );
             })}

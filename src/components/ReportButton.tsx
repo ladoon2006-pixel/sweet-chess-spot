@@ -20,15 +20,24 @@ interface Props {
   contextId?: string;
   size?: "sm" | "icon";
   label?: string;
+  /** When provided, replaces the default flag-button trigger. The child is rendered
+   *  inside a button that opens the report dialog. */
+  children?: React.ReactNode;
+  triggerClassName?: string;
 }
 
-export default function ReportButton({ reportedUserId, type, contextId, size = "icon", label }: Props) {
+export default function ReportButton({
+  reportedUserId, type, contextId, size = "icon", label, children, triggerClassName,
+}: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
-  if (!user || user.id === reportedUserId) return null;
+  if (!user || user.id === reportedUserId) {
+    // Still render children (without report capability) so layout doesn't break
+    return children ? <>{children}</> : null;
+  }
 
   const submit = async () => {
     setBusy(true);
@@ -55,14 +64,25 @@ export default function ReportButton({ reportedUserId, type, contextId, size = "
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className={`inline-flex items-center gap-1 text-xs text-amber-200/70 hover:text-red-400 transition-colors ${size === "sm" ? "px-2 py-1" : "p-1"}`}
-        title="گزارش"
-      >
-        <Flag size={14} />
-        {label && <span>{label}</span>}
-      </button>
+      {children ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={triggerClassName ?? "text-right"}
+          title="برای گزارش پیام لمس کن"
+        >
+          {children}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className={`inline-flex items-center gap-1 text-xs text-amber-200/70 hover:text-red-400 transition-colors ${size === "sm" ? "px-2 py-1" : "p-1"}`}
+          title="گزارش"
+        >
+          <Flag size={14} />
+          {label && <span>{label}</span>}
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent dir="rtl" className="sm:max-w-sm">

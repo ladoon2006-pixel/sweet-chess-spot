@@ -1,5 +1,5 @@
-// Real chess sounds (Lichess open-source pack served from /public/sounds).
-// Menu click is a short noise-burst click for a realistic UI tick.
+// Real chess sounds — decoded via Web Audio API for zero-latency playback.
+// Falls back to HTMLAudio if Web Audio isn't available.
 type SoundKind =
   | "move"
   | "capture"
@@ -25,33 +25,11 @@ const FILES: Record<SoundKind, string> = {
   lowtime: "/sounds/LowTime.mp3",
 };
 
-const cache: Partial<Record<SoundKind, HTMLAudioElement>> = {};
-
-function get(kind: SoundKind): HTMLAudioElement | null {
-  if (typeof window === "undefined") return null;
-  if (!cache[kind]) {
-    const a = new Audio(FILES[kind]);
-    a.preload = "auto";
-    cache[kind] = a;
-  }
-  return cache[kind]!;
-}
-
-export function playSound(kind: SoundKind = "move") {
-  const a = get(kind);
-  if (!a) return;
-  try {
-    const node = a.cloneNode(true) as HTMLAudioElement;
-    node.volume = 0.85;
-    void node.play().catch(() => {});
-  } catch {
-    /* ignore */
-  }
-}
-
-// ---- Realistic menu click: short filtered noise burst ----
+// ---- Web Audio core ----
 let audioCtx: AudioContext | null = null;
-let noiseBuffer: AudioBuffer | null = null;
+const buffers: Partial<Record<SoundKind, AudioBuffer>> = {};
+const loading: Partial<Record<SoundKind, Promise<AudioBuffer | null>>> = {};
+const htmlCache: Partial<Record<SoundKind, HTMLAudioElement>> = {};
 
 function ctx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -64,6 +42,73 @@ function ctx(): AudioContext | null {
   }
   return audioCtx;
 }
+
+async function loadBuffer(kind: SoundKind): Promise<AudioBuffer | null> {
+  if (buffers[kind]) return buffers[kind]!;
+  if (loading[kind]) return loading[kind]!;
+  const ac = ctx();
+  if (!ac) return null;
+  const p = (async () => {
+    try {
+      const res = await fetch(FILES[kind]);
+      if (!res.ok) return null;
+      const arr = await res.arrayBuffer();
+      const buf = await ac.decodeAudioData(arr.slice(0));
+      buffers[kind] = buf;
+      return buf;
+    } catch {
+      return null;
+    }
+  })();
+  loading[kind] = p;
+  return p;
+}
+
+function playViaWebAudio(kind: SoundKind, volume = 0.85): boolean {
+  const ac = ctx();
+  const buf = buffers[kind];
+  if (!ac || !buf) return false;
+  try {
+    if (ac.state === "suspended") void ac.resume();
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const g = ac.createGain();
+    g.gain.value = volume;
+    src.connect(g).connect(ac.destination);
+    src.start(0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function playViaHtml(kind: SoundKind) {
+  if (typeof window === "undefined") return;
+  if (!htmlCache[kind]) {
+    const a = new Audio(FILES[kind]);
+    a.preload = "auto";
+    htmlCache[kind] = a;
+  }
+  try {
+    const node = htmlCache[kind]!.cloneNode(true) as HTMLAudioElement;
+    node.volume = 0.85;
+    void node.play().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
+export function playSound(kind: SoundKind = "move") {
+  // Fast path: Web Audio
+  if (playViaWebAudio(kind)) return;
+  // Kick off load for next time
+  void loadBuffer(kind);
+  // Immediate fallback
+  playViaHtml(kind);
+}
+
+// ---- Realistic menu click: short filtered noise burst ----
+let noiseBuffer: AudioBuffer | null = null;
 
 function getNoiseBuffer(ac: AudioContext): AudioBuffer {
   if (noiseBuffer) return noiseBuffer;
@@ -81,26 +126,19 @@ export function playMenuClick() {
   try {
     if (ac.state === "suspended") void ac.resume();
     const now = ac.currentTime;
-
-    // Noise burst — sounds like a real plastic tap
     const src = ac.createBufferSource();
     src.buffer = getNoiseBuffer(ac);
     const hp = ac.createBiquadFilter();
-    hp.type = "highpass";
-    hp.frequency.value = 1800;
+    hp.type = "highpass"; hp.frequency.value = 1800;
     const bp = ac.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.frequency.value = 3200;
-    bp.Q.value = 1.2;
+    bp.type = "bandpass"; bp.frequency.value = 3200; bp.Q.value = 1.2;
     const gain = ac.createGain();
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(0.55, now + 0.003);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
     src.connect(hp).connect(bp).connect(gain).connect(ac.destination);
-    src.start(now);
-    src.stop(now + 0.06);
+    src.start(now); src.stop(now + 0.06);
 
-    // Tiny low-frequency thump to give it body
     const osc = ac.createOscillator();
     const og = ac.createGain();
     osc.type = "sine";
@@ -110,8 +148,7 @@ export function playMenuClick() {
     og.gain.exponentialRampToValueAtTime(0.18, now + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
     osc.connect(og).connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 0.06);
+    osc.start(now); osc.stop(now + 0.06);
   } catch {
     /* ignore */
   }
@@ -120,9 +157,14 @@ export function playMenuClick() {
 // Warm up on first user interaction (mobile autoplay policies).
 if (typeof window !== "undefined") {
   const warm = () => {
-    (Object.keys(FILES) as SoundKind[]).forEach((k) => get(k));
-    ctx();
+    const ac = ctx();
+    if (ac && ac.state === "suspended") void ac.resume();
+    (Object.keys(FILES) as SoundKind[]).forEach((k) => { void loadBuffer(k); });
     window.removeEventListener("pointerdown", warm);
+    window.removeEventListener("touchstart", warm);
+    window.removeEventListener("keydown", warm);
   };
   window.addEventListener("pointerdown", warm, { once: true });
+  window.addEventListener("touchstart", warm, { once: true });
+  window.addEventListener("keydown", warm, { once: true });
 }

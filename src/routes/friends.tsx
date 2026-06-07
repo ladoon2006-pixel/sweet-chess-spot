@@ -12,7 +12,7 @@ import { UserPlus, Check, X, Search, Send, MessageCircle, ArrowRight, Swords } f
 import { containsProfanity } from "@/lib/profanityFilter";
 import ReportButton from "@/components/ReportButton";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 
 const search = z.object({ with: z.string().optional(), tab: z.string().optional() });
@@ -45,6 +45,7 @@ function FriendsPage() {
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const [challenge, setChallenge] = useState<{ id: string; username: string } | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<{ id: string; username: string } | null>(null);
 
   const sendChallenge = async (toId: string, tc: number) => {
     if (!user) return;
@@ -71,12 +72,20 @@ function FriendsPage() {
     const ids = data.map((f: any) => (f.requester_id === user.id ? f.addressee_id : f.requester_id));
     const { data: profs } = await supabase.from("profiles").select("id,username,rating").in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-    setFriends(
-      data.map((f: any) => ({
-        ...f,
-        other: profMap.get(f.requester_id === user.id ? f.addressee_id : f.requester_id) ?? null,
-      })),
-    );
+
+    // Build list, then DEDUPE per other_user (keep best status: accepted > pending > blocked)
+    const all: Friend[] = data.map((f: any) => ({
+      ...f,
+      other: profMap.get(f.requester_id === user.id ? f.addressee_id : f.requester_id) ?? null,
+    }));
+    const score = (s: string) => (s === "accepted" ? 3 : s === "pending" ? 2 : 1);
+    const byOther = new Map<string, Friend>();
+    for (const f of all) {
+      const otherId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+      const prev = byOther.get(otherId);
+      if (!prev || score(f.status) > score(prev.status)) byOther.set(otherId, f);
+    }
+    setFriends(Array.from(byOther.values()));
   };
 
   useEffect(() => {
@@ -141,16 +150,38 @@ function FriendsPage() {
 
   const sendRequest = async (id: string) => {
     if (!user) return;
+    // First check existing relationship in either direction
+    const { data: existing } = await supabase
+      .from("friendships")
+      .select("id,status,requester_id,addressee_id")
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${user.id})`)
+      .maybeSingle();
+    if (existing) {
+      const e: any = existing;
+      if (e.status === "accepted") { toast.info("این کاربر از قبل جزو دوستان شماست"); return; }
+      if (e.status === "pending" && e.addressee_id === user.id) {
+        // They already sent us a request — auto-accept it
+        const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", e.id);
+        if (error) toast.error(error.message);
+        else { toast.success("به دوستان اضافه شد"); reload(); }
+        return;
+      }
+      if (e.status === "pending") { toast.info("درخواست قبلاً ارسال شده، در انتظار پاسخ"); return; }
+    }
     const { error } = await supabase.from("friendships").insert({ requester_id: user.id, addressee_id: id });
-    if (error) toast.error(error.message);
-    else { toast.success("درخواست ارسال شد"); reload(); }
+    if (error) {
+      if (/duplicate|unique/i.test(error.message)) toast.info("درخواست قبلاً ثبت شده");
+      else toast.error(error.message);
+    } else { toast.success("درخواست ارسال شد"); reload(); }
   };
   const respond = async (id: string, status: "accepted" | "blocked") => {
     const { error } = await supabase.from("friendships").update({ status }).eq("id", id);
     if (error) toast.error(error.message); else reload();
   };
   const removeFriend = async (id: string) => {
-    await supabase.from("friendships").delete().eq("id", id); reload();
+    await supabase.from("friendships").delete().eq("id", id);
+    setConfirmRemove(null);
+    reload();
   };
 
   const pending = friends.filter((f) => f.status === "pending" && f.addressee_id === user?.id);
@@ -224,7 +255,6 @@ function FriendsPage() {
                 <div key={f.id} className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2">
                   <div className="text-sm"><b>{f.other?.username}</b> <span className="text-amber-200/70 text-xs">({f.other?.rating})</span></div>
                   <div className="flex gap-1 items-center">
-                    {f.other && <ReportButton reportedUserId={f.other.id} type="profile" />}
                     <Button size="sm" variant="secondary" title="دعوت به بازی"
                       onClick={() => f.other && setChallenge({ id: f.other.id, username: f.other.username })}>
                       <Swords size={14} />
@@ -232,7 +262,10 @@ function FriendsPage() {
                     <Button size="sm" onClick={() => f.other && openChat(f.other.id)}>
                       <MessageCircle size={14} />
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => removeFriend(f.id)}><X size={14} /></Button>
+                    <Button size="sm" variant="destructive"
+                      onClick={() => f.other && setConfirmRemove({ id: f.id, username: f.other.username })}>
+                      <X size={14} />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -260,15 +293,24 @@ function FriendsPage() {
                 <div className="wood-panel rounded-2xl px-3 py-2 mb-2 text-sm font-bold wood-text">
                   چت با {activeFriend?.username ?? "…"}
                 </div>
+                <div className="text-[11px] text-amber-200/70 text-center mb-1">
+                  برای گزارش یک پیام، روی همان پیام لمس کنید
+                </div>
                 <div className="flex-1 overflow-y-auto space-y-2 py-2">
                   {msgs.map((m) => {
                     const mine = m.sender_id === user?.id;
+                    const bubble = (
+                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
+                        {m.content}
+                      </div>
+                    );
                     return (
                       <div key={m.id} className={`flex items-end gap-1 ${mine ? "justify-start" : "justify-end"}`}>
-                        {!mine && <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id} />}
-                        <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-amber-700 text-white" : "bg-black/40 text-amber-50"}`}>
-                          {m.content}
-                        </div>
+                        {mine ? bubble : (
+                          <ReportButton reportedUserId={m.sender_id} type="chat" contextId={m.id}>
+                            {bubble}
+                          </ReportButton>
+                        )}
                       </div>
                     );
                   })}
@@ -303,6 +345,25 @@ function FriendsPage() {
               </Button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>حذف دوست</DialogTitle>
+            <DialogDescription>
+              مطمئنی می‌خوای {confirmRemove?.username} رو از لیست دوستان حذف کنی؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row-reverse gap-2">
+            <Button variant="destructive" onClick={() => confirmRemove && removeFriend(confirmRemove.id)}>
+              بله، حذف کن
+            </Button>
+            <Button variant="secondary" onClick={() => setConfirmRemove(null)}>
+              انصراف
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
