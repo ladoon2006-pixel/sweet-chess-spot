@@ -45,6 +45,7 @@ function FriendsPage() {
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const [challenge, setChallenge] = useState<{ id: string; username: string } | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<{ id: string; username: string } | null>(null);
 
   const sendChallenge = async (toId: string, tc: number) => {
     if (!user) return;
@@ -71,12 +72,20 @@ function FriendsPage() {
     const ids = data.map((f: any) => (f.requester_id === user.id ? f.addressee_id : f.requester_id));
     const { data: profs } = await supabase.from("profiles").select("id,username,rating").in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-    setFriends(
-      data.map((f: any) => ({
-        ...f,
-        other: profMap.get(f.requester_id === user.id ? f.addressee_id : f.requester_id) ?? null,
-      })),
-    );
+
+    // Build list, then DEDUPE per other_user (keep best status: accepted > pending > blocked)
+    const all: Friend[] = data.map((f: any) => ({
+      ...f,
+      other: profMap.get(f.requester_id === user.id ? f.addressee_id : f.requester_id) ?? null,
+    }));
+    const score = (s: string) => (s === "accepted" ? 3 : s === "pending" ? 2 : 1);
+    const byOther = new Map<string, Friend>();
+    for (const f of all) {
+      const otherId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+      const prev = byOther.get(otherId);
+      if (!prev || score(f.status) > score(prev.status)) byOther.set(otherId, f);
+    }
+    setFriends(Array.from(byOther.values()));
   };
 
   useEffect(() => {
@@ -141,16 +150,38 @@ function FriendsPage() {
 
   const sendRequest = async (id: string) => {
     if (!user) return;
+    // First check existing relationship in either direction
+    const { data: existing } = await supabase
+      .from("friendships")
+      .select("id,status,requester_id,addressee_id")
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${user.id})`)
+      .maybeSingle();
+    if (existing) {
+      const e: any = existing;
+      if (e.status === "accepted") { toast.info("این کاربر از قبل جزو دوستان شماست"); return; }
+      if (e.status === "pending" && e.addressee_id === user.id) {
+        // They already sent us a request — auto-accept it
+        const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", e.id);
+        if (error) toast.error(error.message);
+        else { toast.success("به دوستان اضافه شد"); reload(); }
+        return;
+      }
+      if (e.status === "pending") { toast.info("درخواست قبلاً ارسال شده، در انتظار پاسخ"); return; }
+    }
     const { error } = await supabase.from("friendships").insert({ requester_id: user.id, addressee_id: id });
-    if (error) toast.error(error.message);
-    else { toast.success("درخواست ارسال شد"); reload(); }
+    if (error) {
+      if (/duplicate|unique/i.test(error.message)) toast.info("درخواست قبلاً ثبت شده");
+      else toast.error(error.message);
+    } else { toast.success("درخواست ارسال شد"); reload(); }
   };
   const respond = async (id: string, status: "accepted" | "blocked") => {
     const { error } = await supabase.from("friendships").update({ status }).eq("id", id);
     if (error) toast.error(error.message); else reload();
   };
   const removeFriend = async (id: string) => {
-    await supabase.from("friendships").delete().eq("id", id); reload();
+    await supabase.from("friendships").delete().eq("id", id);
+    setConfirmRemove(null);
+    reload();
   };
 
   const pending = friends.filter((f) => f.status === "pending" && f.addressee_id === user?.id);
